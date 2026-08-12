@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kirk Drinks Beer | Beer Reviews, Pints & Questionable Decisions</title>
+  <meta name="description" content="Kirk drinks beer so you don't have to. Honest beer reviews, pub pints, photos, ratings, and a wall of legends who bought the next round.">
+  <meta name="theme-color" content="#14110f">
+  <meta property="og:title" content="Kirk Drinks Beer">
+  <meta property="og:description" content="Beer reviews, pub pints, photos, ratings, and questionable decisions.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://kirkdrinks.beer/">
+  <link rel="canonical" href="https://kirkdrinks.beer/">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="#top" aria-label="Kirk Drinks Beer home">
+        <span class="brand-mark" aria-hidden="true">🍺</span>
+        <span>
+          <strong>KIRK DRINKS</strong>
+          <em>BEER</em>
+        </span>
+      </a>
+
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+        Menu
+      </button>
+
+      <nav id="site-nav" class="site-nav" aria-label="Main navigation">
+        <a href="#reviews">Reviews</a>
+        <a href="#venues">Venues</a>
+        <a href="#gallery">Beer Cam</a>
+        <a href="#supporters">Beers Drunk</a>
+        <a class="nav-cta" href="#buy">Buy me a beer</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="top" class="hero">
+      <div class="hero-noise" aria-hidden="true"></div>
+      <div class="container hero-grid">
+        <div>
+          <p class="eyebrow">Independent pint journalism*</p>
+          <h1>I drink the beer.<br><span>You get the verdict.</span></h1>
+          <p class="hero-copy">
+            No tasting-room waffle. No pretending I can detect “notes of damp cedar”.
+            Just good beer, bad beer, pub finds, honest venue scores and the occasional pint that ruins tomorrow.
+          </p>
+
+          <div class="hero-actions">
+            <a class="button primary" href="#reviews">See the reviews</a>
+            <a class="button secondary" href="#buy">🍺 Buy the next one</a>
+          </div>
+
+          <p class="hero-footnote">*Journalism may be doing some heavy lifting there.</p>
+        </div>
+
+        <aside class="score-card" aria-label="Current beer stats">
+          <div class="score-card-top">
+            <span>THE IMPORTANT NUMBERS</span>
+            <span class="live-dot">LIVE-ish</span>
+          </div>
+          <div class="stat">
+            <strong id="review-count">0</strong>
+            <span>beers reviewed</span>
+          </div>
+          <div class="stat">
+            <strong id="average-score">0.0</strong>
+            <span>average score</span>
+          </div>
+          <div class="stat">
+            <strong id="supporter-count">0</strong>
+            <span>beers funded by legends</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="reviews" class="section">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Latest pours</p>
+            <h2>Beer reviews</h2>
+          </div>
+          <p>Rated scientifically on the internationally recognised “would I buy another?” scale.</p>
+        </div>
+
+        <div id="reviews-grid" class="reviews-grid" aria-live="polite"></div>
+      </div>
+    </section>
+
+
+    <section id="venues" class="section venue-section">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Not just the pint</p>
+            <h2>Venue reviews</h2>
+          </div>
+          <p>
+            Price matters. The pour matters. And if the place feels like an airport departure lounge,
+            I’m telling you.
+          </p>
+        </div>
+
+        <div class="venue-scale-note">
+          <strong>Venue score:</strong>
+          <span>Price /10</span>
+          <span>Pour /10</span>
+          <span>Venue /10</span>
+          <span>Overall = average</span>
+        </div>
+
+        <div id="venues-grid" class="venues-grid" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="gallery" class="section section-dark">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Beer cam</p>
+            <h2>Pints in the wild</h2>
+          </div>
+          <p>Good lighting. Bad decisions. Occasionally both at once.</p>
+        </div>
+
+        <div id="gallery-grid" class="gallery-grid"></div>
+      </div>
+    </section>
+
+    <section id="supporters" class="section">
+      <div class="container">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">The round of honour</p>
+            <h2>Beers drunk</h2>
+          </div>
+          <p>These absolute heroes have directly contributed to the ongoing scientific study.</p>
+        </div>
+
+        <div class="beer-meter" aria-label="Supporter beer count">
+          <div class="beer-meter-copy">
+            <strong><span id="funded-count">0</span> beers</strong>
+            <span>funded by visitors so far</span>
+          </div>
+          <div class="beer-meter-glass" aria-hidden="true">
+            <div id="beer-meter-fill" class="beer-meter-fill"></div>
+          </div>
+        </div>
+
+        <div id="supporters-grid" class="supporters-grid"></div>
+      </div>
+    </section>
+
+    <section id="buy" class="section buy-section">
+      <div class="container buy-card">
+        <div>
+          <p class="eyebrow">Fund irresponsible journalism</p>
+          <h2>Buy Kirk a beer.</h2>
+          <p>
+            If a review saved you from a terrible pint — or convinced you to try a great one —
+            you can chuck a beer into the research budget.
+          </p>
+        </div>
+
+        <div class="buy-actions">
+          <a
+            class="button beer-button"
+            href="https://www.buymeacoffee.com/YOURUSERNAME"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            🍺 Buy me a beer
+          </a>
+          <small>Replace the link with your Buy Me a Coffee page.</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="section mini-about">
+      <div class="container about-grid">
+        <div>
+          <p class="eyebrow">About this nonsense</p>
+          <h2>Why does this exist?</h2>
+        </div>
+        <p>
+          Because I own <strong>kirkdrinks.beer</strong>, which legally obligated me to do something
+          useful with it. So this is my little corner of the internet for beer reviews, pub finds,
+          photos and the occasional deeply unnecessary ranking.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <p>© <span id="year"></span> Kirk Drinks Beer. Please drink responsibly.</p>
+      <p>Built with HTML, CSS, JavaScript and poor impulse control.</p>
+    </div>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
