@@ -1,0 +1,27 @@
+[
+  {
+    "image": "assets/gallery-1.jpg",
+    "caption": "Friday research session",
+    "alt": "Placeholder pint photo"
+  },
+  {
+    "image": "assets/gallery-2.jpg",
+    "caption": "A suspiciously photogenic IPA",
+    "alt": "Placeholder IPA photo"
+  },
+  {
+    "image": "assets/gallery-3.jpg",
+    "caption": "This one had potential",
+    "alt": "Placeholder beer photo"
+  },
+  {
+    "image": "assets/gallery-4.jpg",
+    "caption": "Pub lighting doing the heavy lifting",
+    "alt": "Placeholder pub beer photo"
+  },
+  {
+    "image": "assets/gallery-5.jpg",
+    "caption": "Another difficult evening at the office",
+    "alt": "Placeholder pint photo"
+  }
+]

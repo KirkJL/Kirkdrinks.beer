@@ -1,0 +1,22 @@
+[
+  {
+    "name": "Dave",
+    "beers": 2,
+    "message": "For science."
+  },
+  {
+    "name": "Sarah",
+    "beers": 1,
+    "message": "Get something decent this time."
+  },
+  {
+    "name": "Anonymous legend",
+    "beers": 3,
+    "message": "A heroic contribution to pint research."
+  },
+  {
+    "name": "Mick",
+    "beers": 1,
+    "message": "Cheers \ud83c\udf7b"
+  }
+]
