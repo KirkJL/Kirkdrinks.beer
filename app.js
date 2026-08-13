@@ -40,7 +40,11 @@ function createReviewCard(review) {
 
   const meta = document.createElement("div");
   meta.className = "review-meta";
-  meta.innerHTML = `<span>${safeText(review.style)}</span><span>${safeText(review.location)}</span>`;
+  meta.innerHTML = `<span>${safeText(review.style)}</span><span>${safeText(review.location || "Location not recorded")}</span>`;
+
+  const pricePaid = document.createElement("div");
+  pricePaid.className = "review-price-paid";
+  pricePaid.textContent = `Paid: ${formatPrice(review.pricePaid, review.currency || "GBP")}`;
 
   const title = document.createElement("h3");
   title.textContent = review.name;
@@ -60,25 +64,12 @@ function createReviewCard(review) {
   again.textContent = review.buyAgain ? "WOULD BUY AGAIN ✓" : "ONE AND DONE ✕";
 
   scoreRow.append(score, again);
-  content.append(meta, title, copy, scoreRow);
-
-  if (review.venue?.name) {
-    const venueLink = document.createElement("a");
-    venueLink.className = "review-venue-link";
-    venueLink.href = `#venue-${slugify(review.venue.name)}`;
-    venueLink.textContent = `Venue verdict: ${review.venue.name} →`;
-    content.appendChild(venueLink);
-  }
+  content.append(meta, pricePaid, title, copy, scoreRow);
 
   article.appendChild(content);
   return article;
 }
 
-function getVenueOverall(venue) {
-  const values = [venue.price, venue.pour, venue.venue].map(Number).filter(Number.isFinite);
-  if (!values.length) return 0;
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
 
 function formatPrice(value, currency = "GBP") {
   const amount = Number(value);
@@ -89,72 +80,6 @@ function formatPrice(value, currency = "GBP") {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(amount);
-}
-
-function createVenueCard(review) {
-  const venue = review.venue || {};
-  const article = document.createElement("article");
-  article.className = "venue-card";
-  article.id = `venue-${slugify(venue.name || review.location || review.name)}`;
-
-  const head = document.createElement("div");
-  head.className = "venue-card-head";
-
-  const headingWrap = document.createElement("div");
-  const title = document.createElement("h3");
-  title.textContent = venue.name || review.location || "Venue";
-  const location = document.createElement("div");
-  location.className = "venue-location";
-  location.textContent = venue.location || review.location || "";
-
-  const paid = document.createElement("div");
-  paid.className = "venue-price-paid";
-  paid.textContent = `Pint paid: ${formatPrice(venue.pricePaid, venue.currency || "GBP")}`;
-
-  headingWrap.append(title, location, paid);
-
-  const overall = document.createElement("div");
-  overall.className = "venue-overall";
-  const overallScore = getVenueOverall(venue);
-  overall.innerHTML = `<strong>${overallScore.toFixed(1)}</strong><span>overall</span>`;
-
-  head.append(headingWrap, overall);
-
-  const scores = document.createElement("div");
-  scores.className = "venue-scores";
-
-  [
-    ["Price", venue.price],
-    ["Pour", venue.pour],
-    ["Venue", venue.venue]
-  ].forEach(([label, value]) => {
-    const box = document.createElement("div");
-    box.className = "venue-score";
-
-    const labelEl = document.createElement("span");
-    labelEl.textContent = label;
-
-    const valueEl = document.createElement("strong");
-    valueEl.textContent = `${Number(value || 0).toFixed(1)}/10`;
-
-    box.append(labelEl, valueEl);
-    scores.appendChild(box);
-  });
-
-  const reviewWrap = document.createElement("div");
-  reviewWrap.className = "venue-review";
-
-  const copy = document.createElement("p");
-  copy.textContent = venue.review || "No venue notes yet.";
-
-  const verdict = document.createElement("span");
-  verdict.className = "venue-verdict";
-  verdict.textContent = venue.wouldReturn ? "Would drink here again ✓" : "Wouldn't rush back ✕";
-
-  reviewWrap.append(copy, verdict);
-  article.append(head, scores, reviewWrap);
-
-  return article;
 }
 
 function createGalleryItem(item) {
@@ -199,7 +124,6 @@ function createSupporterCard(supporter) {
 
 function render() {
   const reviewsGrid = el("#reviews-grid");
-  const venuesGrid = el("#venues-grid");
   const galleryGrid = el("#gallery-grid");
   const supportersGrid = el("#supporters-grid");
 
@@ -207,13 +131,6 @@ function render() {
     state.reviews.forEach(review => reviewsGrid.appendChild(createReviewCard(review)));
   } else {
     reviewsGrid.innerHTML = `<div class="empty-state">No reviews yet. Tragic. Time to visit the pub.</div>`;
-  }
-
-  const venueReviews = state.reviews.filter(review => review.venue?.name);
-  if (venueReviews.length) {
-    venueReviews.forEach(review => venuesGrid.appendChild(createVenueCard(review)));
-  } else {
-    venuesGrid.innerHTML = `<div class="empty-state">No venue reviews yet. Somebody pour the man a pint.</div>`;
   }
 
   if (state.gallery.length) {
