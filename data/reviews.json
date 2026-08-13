@@ -1,65 +1,24 @@
 [
   {
-    "name": "Neck Oil",
-    "style": "Session IPA",
-    "location": "Pub pint",
-    "score": 8.6,
-    "buyAgain": true,
-    "review": "Crisp, citrusy and dangerously easy to drink. The sort of pint that accidentally becomes three.",
-    "image": "assets/beer-1.jpg",
-    "alt": "Placeholder image for a pint of Neck Oil",
-    "venue": {
-      "name": "The Old Brewery",
-      "location": "Town Centre",
-      "price": 7.2,
-      "pour": 9.0,
-      "venue": 8.4,
-      "wouldReturn": true,
-      "review": "Fair price, properly poured, and actually feels like somewhere you want to sit for another one. Strong pub.",
-      "pricePaid": 6.5,
-      "currency": "GBP"
-    }
+  "name": "The Pilot",
+  "style": "Session IPA",
+  "brewery": "Siren",
+  "pricePaid": 7.20,
+  "currency": "GBP",
+  "score": 8.6,
+  "buyAgain": true,
+  "review": "Gluten Free! Crisp, citrusy and dangerously easy to drink.",
+  "image": "assets/20260812_172746.jpg"
   },
   {
-    "name": "Punk IPA",
-    "style": "IPA",
-    "location": "Home",
-    "score": 7.8,
-    "buyAgain": true,
-    "review": "Still a solid fridge beer. Hoppy enough to feel interesting without turning dinner into a botanical experiment.",
-    "image": "assets/beer-2.jpg",
-    "alt": "Placeholder image for Punk IPA",
-    "venue": {
-      "name": "The Hop Room",
-      "location": "High Street",
-      "price": 6.5,
-      "pour": 8.1,
-      "venue": 7.6,
-      "wouldReturn": true,
-      "review": "A little expensive for what it is, but the beer was treated properly and the place had a decent atmosphere.",
-      "pricePaid": 7.2,
-      "currency": "GBP"
-    }
-  },
-  {
-    "name": "Mystery Pub Lager",
-    "style": "Lager",
-    "location": "Somewhere questionable",
-    "score": 5.9,
-    "buyAgain": false,
-    "review": "Cold. Wet. Technically beer. Did the job, but nobody is writing poetry about it.",
-    "image": "assets/beer-3.jpg",
-    "alt": "Placeholder image for a lager pint",
-    "venue": {
-      "name": "The Station Arms",
-      "location": "Near the station",
-      "price": 4.8,
-      "pour": 5.7,
-      "venue": 5.9,
-      "wouldReturn": false,
-      "review": "The pint arrived alive, which is something. Too expensive, average pour, and the venue had all the charm of a delayed train.",
-      "pricePaid": 5.8,
-      "currency": "GBP"
-    }
+  "name": "Need to get it",
+  "style": "Pilsner",
+  "location": "The Old Brewery",
+  "pricePaid": 6.90,
+  "currency": "GBP",
+  "score": 8.6,
+  "buyAgain": true,
+  "review": "Crisp, citrusy and dangerously easy to drink.",
+  "image": "assets/20260812_174131.jpg"
   }
 ]
