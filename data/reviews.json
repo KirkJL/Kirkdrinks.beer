@@ -1,30 +1,5 @@
 [
   {
-  "name": "The Pilot",
-  "style": "Session IPA",
-  "brewery": "Siren",
-  "pricePaid": 7.20,
-  "currency": "GBP",
-  "score": 8.6,
-  "buyAgain": true,
-  "review": "Gluten Free! Crisp, citrusy and dangerously easy to drink.",
-  "image": "assets/20260812_172746.jpg"
-  },
-  {
-  "name": "Campus",
-  "style": "Pilsner",
-  "location": "The Old Brewery",
-  "pricePaid": 6.90,
-  "currency": "GBP",
-  "score": 8.6,
-  "buyAgain": true,
-  "review": "Crisp, citrusy and dangerously easy to drink.",
-  "image": "assets/20260812_174131.jpg"
-  }
-]
-[
-  [
-  {
     "name": "The Pilot",
     "style": "Session IPA",
     "location": "The Ale House (Chelmsford)",
@@ -60,5 +35,4 @@
     "pricePaid": 5.8,
     "currency": "GBP"
   }
-]
 ]
