@@ -24,15 +24,15 @@
     "currency": "GBP"
   },
   {
-    "name": "Mystery Pub Lager",
+    "name": "Super bock",
     "style": "Lager",
-    "location": "The Station Arms",
-    "score": 5.9,
+    "location": "Albufeira, Portugal SUPERBOCK!!",
+    "score": 8,
     "buyAgain": false,
-    "review": "Cold. Wet. Technically beer. Did the job, but nobody is writing poetry about it.",
-    "image": "assets/beer-3.jpg",
+    "review": "We'll always have Portugal 2026 ❤️",
+    "image": "assets/20260610_121024.jpg",
     "alt": "Placeholder image for a lager pint",
     "pricePaid": 5.8,
-    "currency": "GBP"
+    "currency": "EUR"
   }
 ]
