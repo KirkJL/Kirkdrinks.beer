@@ -34,5 +34,18 @@
     "alt": "Placeholder image for a lager pint",
     "pricePaid": 5.8,
     "currency": "EUR"
+  },
+    
+  {
+    "name": "Bavo",
+    "style": "Lager",
+    "location": "The Ale House (Chelmsford)",
+    "score": 8,
+    "buyAgain": false,
+    "review": "Little bro version of Campus, ",
+    "image": "assets/20260814_172918.jpg",
+    "alt": "Placeholder image for a lager pint",
+    "pricePaid": 6.20,
+    "currency": "GBP"
   }
 ]
