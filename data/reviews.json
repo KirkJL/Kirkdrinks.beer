@@ -47,5 +47,17 @@
     "alt": "Placeholder image for a lager pint",
     "pricePaid": 6.20,
     "currency": "GBP"
-  }
+  } 
+    {
+    "name": "Brixton Coldharbour",
+    "style": "Lager",
+    "location": "The Half Moon (Rayleigh)",
+    "score": 8,
+    "buyAgain": true,
+    "review": "Still a solid fridge beer. Hoppy enough to feel interesting without turning dinner into a botanical experiment.",
+    "image":  "assets/20260815_173917.jpg",
+    "alt": "Placeholder image for Punk IPA",
+    "pricePaid": 6.10,
+    "currency": "GBP"
+  
 ]
