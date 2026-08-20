@@ -60,7 +60,8 @@
     "pricePaid": 6.10,
     "currency": "GBP"
     },
-      "name": "All Day Long",
+     {
+    "name": "All Day Long",
     "style": "IPA",
     "location": "The Ale House (Chelmsford)",
     "score": 5,
