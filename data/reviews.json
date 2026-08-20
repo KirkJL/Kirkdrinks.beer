@@ -59,5 +59,16 @@
     "alt": "Placeholder image for Punk IPA",
     "pricePaid": 6.10,
     "currency": "GBP"
+    },
+      "name": "All Day Long",
+    "style": "IPA",
+    "location": "The Ale House (Chelmsford)",
+    "score": 5,
+    "buyAgain": false,
+    "review": "Meh, nothing special, one and done BOOOSH.",
+    "image":  "assets/20260820_172254.jpg",
+    "alt": "Placeholder image for Punk IPA",
+    "pricePaid": 7.40,
+    "currency": "GBP"
     }
 ]
