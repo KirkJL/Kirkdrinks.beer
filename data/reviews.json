@@ -1,5 +1,17 @@
 [
     {
+    "name": "The Legend",
+    "style": "Lager",
+    "location": "The Brewhouse Kitchdn (Chelmsford)",
+    "score": 7.5,
+    "buyAgain": true,
+    "review": "Crisp, citrusy and dangerously easy to drink. The sort of pint that accidentally becomes three.",
+    "image": "assets/20260821_172213.heic",
+    "alt": "Placeholder image for a pint of Neck Oil",
+    "pricePaid": 6.70,
+    "currency": "GBP"
+    }
+    ,{
     "name": "The Pilot",
     "style": "Session IPA",
     "location": "The Ale House (Chelmsford)",
