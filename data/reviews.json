@@ -2,7 +2,7 @@
     {
     "name": "The Legend",
     "style": "Lager",
-    "location": "The Brewhouse Kitchdn (Chelmsford)",
+    "location": "The Brewhouse Kitchen (Chelmsford)",
     "score": 7.5,
     "buyAgain": true,
     "review": "Crisp, citrusy and dangerously easy to drink. The sort of pint that accidentally becomes three.",
@@ -10,7 +10,19 @@
     "alt": "Placeholder image for a pint of Neck Oil",
     "pricePaid": 6.70,
     "currency": "GBP"
-    }
+    },
+    {
+    "name": "Five Inch Drop",
+    "style": "IPA",
+    "location": "The Ale House (Chelmsford)",
+    "score": 6.5,
+    "buyAgain": true,
+    "review": "Crisp, citrusy and dangerously easy to drink. The sort of pint that accidentally becomes three.",
+    "image": "assets/20260824_172234.jpg",
+    "alt": "Placeholder image for a pint of Neck Oil",
+    "pricePaid": 6.10,
+    "currency": "GBP"
+    },
     ,{
     "name": "The Pilot",
     "style": "Session IPA",
