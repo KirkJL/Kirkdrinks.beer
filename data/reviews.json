@@ -12,6 +12,18 @@
     "currency": "GBP"
     },
     {
+    "name": "Boltmaker",
+    "style": "IPA",
+    "location": "The Castle Inn (Colchester)",
+    "score": 8.5,
+    "buyAgain": true,
+    "review": "Crisp, citrusy and dangerously easy to drink. The sort of pint that accidentally becomes three.",
+    "image": "assets/20260828_155802.jpg",
+    "alt": "Placeholder image for a pint of Neck Oil",
+    "pricePaid": 6.70,
+    "currency": "GBP"
+    },
+    {
     "name": "Lunar Haze",
     "style": "Lager",
     "location": "The Castle Inn (Colcheste4)",
