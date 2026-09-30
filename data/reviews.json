@@ -20,8 +20,8 @@
     "review": "Crisp, citrusy and dangerously easy to drink. The sort of pint that accidentally becomes three.",
     "image": "assets/20260930_110014.jpg",
     "alt": "Placeholder image for a pint of Neck Oil",
-    "pricePaid": 0,
-    "currency": "--"
+    "pricePaid": 3.50,
+    "currency": "EUR"
     },
     {
     "name": "The Legend",
