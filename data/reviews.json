@@ -1,171 +1,338 @@
 [
-    {
+  {
     "name": "The Journey Begins",
+    "brewery": "",
     "style": "IPA",
-    "location": "Three wise monkeys (Colchester)",
+    "location": "Colchester",
+    "country": "United Kingdom",
     "score": 8,
     "buyAgain": true,
     "review": "A proper juicy IPA with plenty of tropical fruit and citrus coming through. Hoppy without being obnoxiously bitter, and dangerously easy to keep drinking. An 8/10 pint I'd happily go back for.",
     "image": "assets/20260829_151535.jpg",
     "alt": "The Journey Begins IPA craft beer at Three Wise Monkeys in Colchester",
-    "pricePaid": 7.20,
-    "currency": "GBP"
-    },
-    {
+    "venue": {
+      "name": "Three Wise Monkeys",
+      "location": "Colchester",
+      "coordinates": null,
+      "pricePaid": 7.20,
+      "currency": "GBP",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
+    }
+  },
+  {
     "name": "Efes",
+    "brewery": "Anadolu Efes",
     "style": "Pilsner",
-    "location": "Sundia by Liberty",
+    "location": "Ölüdeniz",
+    "country": "Türkiye",
     "score": 9.5,
     "buyAgain": true,
     "review": "Ice-cold Efes in Turkey just hits differently. Crisp, clean and ridiculously refreshing in the heat. Maybe the location is doing some heavy lifting, but this was dangerously close to the perfect holiday beer.",
     "image": "assets/20260930_110014.jpg",
     "alt": "Efes Pilsener Turkish lager served at Sundia by Liberty in Turkey",
-    "pricePaid": 3.50,
-    "currency": "EUR"
-    },
-    {
+    "venue": {
+      "name": "Sundia by Liberty",
+      "location": "Ölüdeniz",
+      "coordinates": null,
+      "pricePaid": 3.50,
+      "currency": "EUR",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
+    }
+  },
+  {
     "name": "The Legend",
+    "brewery": "",
     "style": "Lager",
-    "location": "The Brewhouse Kitchen (Chelmsford)",
+    "location": "Chelmsford",
+    "country": "United Kingdom",
     "score": 7.5,
     "buyAgain": true,
     "review": "A clean, easy-drinking lager that does exactly what you want it to. Crisp, refreshing and uncomplicated. Not something that's going to blow your head off, but absolutely something I'd order another pint of.",
     "image": "assets/20260828_155802.jpg",
     "alt": "The Legend craft lager at Brewhouse and Kitchen in Chelmsford",
-    "pricePaid": 6.70,
-    "currency": "GBP"
-    },
-    {
+    "venue": {
+      "name": "Brewhouse & Kitchen",
+      "location": "Chelmsford",
+      "coordinates": null,
+      "pricePaid": 6.70,
+      "currency": "GBP",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
+    }
+  },
+  {
     "name": "Boltmaker",
-    "style": "IPA",
-    "location": "The Castle Inn (Colchester)",
+    "brewery": "Timothy Taylor",
+    "style": "Bitter",
+    "location": "Colchester",
+    "country": "United Kingdom",
     "score": 8.5,
     "buyAgain": true,
     "review": "This is proper traditional beer territory. Malty, rich and full of flavour with that classic bitter finish. No tropical fruit salad or gimmicks required. Just a bloody good pint.",
     "image": "assets/20260829_143050.jpg",
     "alt": "Timothy Taylor Boltmaker award-winning Yorkshire bitter at The Castle Inn Colchester",
-    "pricePaid": 6.70,
-    "currency": "GBP"
-    },
-    {
+    "venue": {
+      "name": "The Castle Inn",
+      "location": "Colchester",
+      "coordinates": null,
+      "pricePaid": 6.70,
+      "currency": "GBP",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
+    }
+  },
+  {
     "name": "Lunar Haze",
-    "style": "Lager",
-    "location": "The Castle Inn (Colchester)",
+    "brewery": "Beavertown",
+    "style": "IPA",
+    "location": "Colchester",
+    "country": "United Kingdom",
     "score": 7.5,
     "buyAgain": true,
     "review": "Soft, hazy and absolutely loaded with juicy tropical flavour. Much fruitier than your average pint and incredibly smooth going down. A good one when you fancy something a little different.",
     "image": "assets/20260829_140244.jpg",
     "alt": "Beavertown Lunar Haze hazy IPA craft beer at The Castle Inn Colchester",
-    "pricePaid": 6.85,
-    "currency": "GBP"
-    },
-    {
+    "venue": {
+      "name": "The Castle Inn",
+      "location": "Colchester",
+      "coordinates": null,
+      "pricePaid": 6.85,
+      "currency": "GBP",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
+    }
+  },
+  {
     "name": "Five Inch Drop",
+    "brewery": "",
     "style": "IPA",
-    "location": "The Ale House (Chelmsford)",
+    "location": "Chelmsford",
+    "country": "United Kingdom",
     "score": 6.5,
     "buyAgain": true,
     "review": "Decent, hoppy and easy enough to drink, but it didn't quite have enough about it to become memorable. I'd happily have another, but I'm probably checking what else is on the board first.",
     "image": "assets/20260824_172234.jpg",
     "alt": "Five Inch Drop IPA craft beer at The Ale House in Chelmsford Essex",
-    "pricePaid": 6.10,
-    "currency": "GBP"
-    },
-    {
+    "venue": {
+      "name": "The Ale House",
+      "location": "Chelmsford",
+      "coordinates": null,
+      "pricePaid": 6.10,
+      "currency": "GBP",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
+    }
+  },
+  {
     "name": "Raven",
+    "brewery": "",
     "style": "Porter",
-    "location": "The Ale House (Chelmsford)",
+    "location": "Chelmsford",
+    "country": "United Kingdom",
     "score": 5.3,
     "buyAgain": true,
     "review": "Dark, roasted and definitely heavier than my usual order. Plenty of coffee and chocolate character, but it didn't completely win me over. Interesting pint rather than an instant favourite.",
     "image": "assets/20260828_164118.jpg",
     "alt": "Raven dark porter craft beer at The Ale House in Chelmsford Essex",
-    "pricePaid": 6.10,
-    "currency": "GBP"
-    },
-    {
+    "venue": {
+      "name": "The Ale House",
+      "location": "Chelmsford",
+      "coordinates": null,
+      "pricePaid": 6.10,
+      "currency": "GBP",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
+    }
+  },
+  {
     "name": "American Pale Ale",
-    "style": "IPA",
-    "location": "The Brewhouse Kitchen (Chelmsford)",
+    "brewery": "",
+    "style": "Pale Ale",
+    "location": "Chelmsford",
+    "country": "United Kingdom",
     "score": 4.65,
     "buyAgain": true,
     "review": "Plenty of American-style hop character, but this one just didn't land for me. Drinkable enough, but at 4.65 it's firmly in the 'glad I tried it, probably wouldn't rush back' category.",
     "image": "assets/20260828_155802.jpg",
     "alt": "American Pale Ale craft beer at Brewhouse and Kitchen in Chelmsford Essex",
-    "pricePaid": 6.70,
-    "currency": "GBP"
-    },
-    {
+    "venue": {
+      "name": "Brewhouse & Kitchen",
+      "location": "Chelmsford",
+      "coordinates": null,
+      "pricePaid": 6.70,
+      "currency": "GBP",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
+    }
+  },
+  {
     "name": "The Pilot",
+    "brewery": "",
     "style": "Session IPA",
-    "location": "The Ale House (Chelmsford)",
+    "location": "Chelmsford",
+    "country": "United Kingdom",
     "score": 7.5,
     "buyAgain": true,
     "review": "Gluten free and you'd never know it. Light, crisp and hoppy without going overboard, which is exactly what I want from a session IPA. Very easy to imagine a few of these disappearing.",
     "image": "assets/20260812_172746.jpg",
     "alt": "The Pilot gluten free Session IPA craft beer at The Ale House Chelmsford",
-    "pricePaid": 7.60,
-    "currency": "GBP"
+    "venue": {
+      "name": "The Ale House",
+      "location": "Chelmsford",
+      "coordinates": null,
+      "pricePaid": 7.60,
+      "currency": "GBP",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
+    }
   },
   {
     "name": "Campus",
+    "brewery": "",
     "style": "Pilsner",
-    "location": "The Ale House (Chelmsford)",
+    "location": "Chelmsford",
+    "country": "United Kingdom",
     "score": 8.5,
     "buyAgain": true,
     "review": "This is my kind of pilsner. Crisp, clean and refreshing but with enough flavour to stop it becoming boring lager territory. One of those beers where the first pint immediately makes you consider the second.",
-    "image":  "assets/20260812_174131.jpg",
+    "image": "assets/20260812_174131.jpg",
     "alt": "Campus Pilsner craft beer at The Ale House in Chelmsford Essex",
-    "pricePaid": 6.90,
-    "currency": "GBP"
+    "venue": {
+      "name": "The Ale House",
+      "location": "Chelmsford",
+      "coordinates": null,
+      "pricePaid": 6.90,
+      "currency": "GBP",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
+    }
   },
   {
-    "name": "Super bock",
+    "name": "Super Bock",
+    "brewery": "Super Bock Group",
     "style": "Lager",
-    "location": "Albufeira, Portugal SUPERBOCK!!",
+    "location": "Albufeira",
+    "country": "Portugal",
     "score": 8,
     "buyAgain": true,
     "review": "It's Super Bock in Portugal. Cold, crisp, uncomplicated and somehow about 40% better when you're drinking it in the Portuguese sun. We'll always have Portugal 2026 ❤️",
     "image": "assets/20260610_121024.jpg",
     "alt": "Super Bock Portuguese lager served in Albufeira Portugal",
-    "pricePaid": 5.8,
-    "currency": "EUR"
+    "venue": {
+      "name": "Unknown venue",
+      "location": "Albufeira",
+      "coordinates": null,
+      "pricePaid": 5.80,
+      "currency": "EUR",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
+    }
   },
-    
   {
     "name": "Bavo",
+    "brewery": "",
     "style": "Lager",
-    "location": "The Ale House (Chelmsford)",
+    "location": "Chelmsford",
+    "country": "United Kingdom",
     "score": 7,
     "buyAgain": false,
     "review": "The little bro version of Campus. Clean, crisp and perfectly drinkable, but Campus has more character and wins that fight every time. Nothing wrong with Bavo, there's just a better option standing next to it.",
     "image": "assets/20260814_172918.jpg",
     "alt": "Bavo Belgian lager at The Ale House in Chelmsford Essex",
-    "pricePaid": 6.20,
-    "currency": "GBP"
+    "venue": {
+      "name": "The Ale House",
+      "location": "Chelmsford",
+      "coordinates": null,
+      "pricePaid": 6.20,
+      "currency": "GBP",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
+    }
   },
-    {
+  {
     "name": "Brixton Coldharbour",
+    "brewery": "Brixton Brewery",
     "style": "Lager",
-    "location": "The Half Moon (Rayleigh)",
+    "location": "Rayleigh",
+    "country": "United Kingdom",
     "score": 8,
     "buyAgain": true,
     "review": "A lager with enough personality to actually remember drinking it. Crisp and refreshing with a little more hop character than the usual safe pint. Very easy drinking and absolutely worthy of another.",
-    "image":  "assets/20260815_173917.jpg",
+    "image": "assets/20260815_173917.jpg",
     "alt": "Brixton Coldharbour Lager craft beer at The Half Moon in Rayleigh Essex",
-    "pricePaid": 6.10,
-    "currency": "GBP"
-    },
-     {
+    "venue": {
+      "name": "The Half Moon",
+      "location": "Rayleigh",
+      "coordinates": null,
+      "pricePaid": 6.10,
+      "currency": "GBP",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
+    }
+  },
+  {
     "name": "All Day Long",
+    "brewery": "",
     "style": "IPA",
-    "location": "The Ale House (Chelmsford)",
+    "location": "Chelmsford",
+    "country": "United Kingdom",
     "score": 5,
     "buyAgain": false,
     "review": "Perfectly drinkable, completely forgettable. Nothing particularly wrong with it, but nothing made me want another either. Middle of the road, one and done. BOOOSH.",
-    "image":  "assets/20260820_172254.jpg",
+    "image": "assets/20260820_172254.jpg",
     "alt": "All Day Long IPA craft beer at The Ale House in Chelmsford Essex",
-    "pricePaid": 7.40,
-    "currency": "GBP"
+    "venue": {
+      "name": "The Ale House",
+      "location": "Chelmsford",
+      "coordinates": null,
+      "pricePaid": 7.40,
+      "currency": "GBP",
+      "price": null,
+      "pour": null,
+      "venue": null,
+      "review": "",
+      "wouldReturn": true
     }
+  }
 ]
