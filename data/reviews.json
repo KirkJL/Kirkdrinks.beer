@@ -13,12 +13,15 @@
     "venue": {
       "name": "Three Wise Monkeys",
       "location": "Colchester",
-      "coordinates": null,
+      "coordinates": {
+        "lat": 51.889454,
+        "lng": 0.902262
+      },
       "pricePaid": 7.20,
       "currency": "GBP",
-      "price": null,
-      "pour": null,
-      "venue": null,
+      "price": 4,
+      "pour": 8,
+      "venue": 7,
       "review": "",
       "wouldReturn": true
     }
@@ -37,12 +40,15 @@
     "venue": {
       "name": "Sundia by Liberty",
       "location": "Ölüdeniz",
-      "coordinates": null,
+      "coordinates": {
+        "lat": 36.547368,
+        "lng": 29.126488
+      },
       "pricePaid": 3.50,
       "currency": "EUR",
-      "price": null,
-      "pour": null,
-      "venue": null,
+      "price": 9,
+      "pour": 8,
+      "venue": 8,
       "review": "",
       "wouldReturn": true
     }
@@ -61,12 +67,15 @@
     "venue": {
       "name": "Brewhouse & Kitchen",
       "location": "Chelmsford",
-      "coordinates": null,
+      "coordinates": {
+        "lat": 51.735870,
+        "lng": 0.468794
+      },
       "pricePaid": 6.70,
       "currency": "GBP",
-      "price": null,
-      "pour": null,
-      "venue": null,
+      "price": 5,
+      "pour": 8,
+      "venue": 8,
       "review": "",
       "wouldReturn": true
     }
@@ -133,7 +142,10 @@
     "venue": {
       "name": "The Ale House",
       "location": "Chelmsford",
-      "coordinates": null,
+      "coordinates": {
+        "lat": 51.736076,
+        "lng": 0.467488
+      },
       "pricePaid": 6.10,
       "currency": "GBP",
       "price": null,
@@ -157,7 +169,10 @@
     "venue": {
       "name": "The Ale House",
       "location": "Chelmsford",
-      "coordinates": null,
+      "coordinates": {
+        "lat": 51.736076,
+        "lng": 0.467488
+      },
       "pricePaid": 6.10,
       "currency": "GBP",
       "price": null,
@@ -181,12 +196,15 @@
     "venue": {
       "name": "Brewhouse & Kitchen",
       "location": "Chelmsford",
-      "coordinates": null,
+      "coordinates": {
+        "lat": 51.735870,
+        "lng": 0.468794
+      },
       "pricePaid": 6.70,
       "currency": "GBP",
-      "price": null,
-      "pour": null,
-      "venue": null,
+      "price": 5,
+      "pour": 8,
+      "venue": 8,
       "review": "",
       "wouldReturn": true
     }
@@ -205,7 +223,10 @@
     "venue": {
       "name": "The Ale House",
       "location": "Chelmsford",
-      "coordinates": null,
+      "coordinates": {
+        "lat": 51.736076,
+        "lng": 0.467488
+      },
       "pricePaid": 7.60,
       "currency": "GBP",
       "price": null,
@@ -229,7 +250,10 @@
     "venue": {
       "name": "The Ale House",
       "location": "Chelmsford",
-      "coordinates": null,
+      "coordinates": {
+        "lat": 51.736076,
+        "lng": 0.467488
+      },
       "pricePaid": 6.90,
       "currency": "GBP",
       "price": null,
@@ -277,7 +301,10 @@
     "venue": {
       "name": "The Ale House",
       "location": "Chelmsford",
-      "coordinates": null,
+      "coordinates": {
+        "lat": 51.736076,
+        "lng": 0.467488
+      },
       "pricePaid": 6.20,
       "currency": "GBP",
       "price": null,
@@ -325,7 +352,10 @@
     "venue": {
       "name": "The Ale House",
       "location": "Chelmsford",
-      "coordinates": null,
+      "coordinates": {
+        "lat": 51.736076,
+        "lng": 0.467488
+      },
       "pricePaid": 7.40,
       "currency": "GBP",
       "price": null,
