@@ -2259,4 +2259,878 @@ function showMapUnavailable(
 
 
   if (DOM.mapStatus) {
-    DOM
+    DOM.mapStatus.textContent =
+      message;
+  }
+}
+
+
+function hideMapUnavailable() {
+  if (DOM.pintMap) {
+    DOM.pintMap.hidden =
+      false;
+  }
+
+
+  if (DOM.mapEmpty) {
+    DOM.mapEmpty.hidden =
+      true;
+  }
+}
+
+
+// ================================================================
+// GALLERY
+// ================================================================
+
+async function initialiseGallery() {
+  if (!DOM.galleryGrid) {
+    return;
+  }
+
+
+  try {
+    const data =
+      await fetchJson(
+        CONFIG.galleryUrl
+      );
+
+
+    if (!Array.isArray(data)) {
+      throw new Error(
+        "gallery.json must contain a JSON array."
+      );
+    }
+
+
+    state.gallery =
+      data.filter(
+        item =>
+          item &&
+          typeof item === "object"
+      );
+
+
+    renderGallery();
+
+  } catch (error) {
+    console.warn(
+      "[KirkDrinks] Gallery unavailable:",
+      error
+    );
+
+
+    DOM.galleryGrid.innerHTML = `
+      <div class="empty-state">
+        Beer Cam currently unavailable.
+      </div>
+    `;
+  }
+}
+
+
+function renderGallery() {
+  if (!DOM.galleryGrid) {
+    return;
+  }
+
+
+  if (state.gallery.length === 0) {
+    DOM.galleryGrid.innerHTML = `
+      <div class="empty-state">
+        Beer Cam coming soon.
+      </div>
+    `;
+
+    return;
+  }
+
+
+  DOM.galleryGrid.innerHTML =
+    state.gallery
+      .map(
+        item => {
+          const image =
+            safeAssetPath(
+              item.image
+            );
+
+
+          if (!image) {
+            return "";
+          }
+
+
+          const alt =
+            escapeHtml(
+              item.alt ||
+              item.caption ||
+              "Beer photo"
+            );
+
+
+          const caption =
+            escapeHtml(
+              item.caption ||
+              ""
+            );
+
+
+          return `
+            <figure class="gallery-item">
+
+              <img
+                src="${image}"
+                alt="${alt}"
+                loading="lazy"
+                decoding="async"
+              >
+
+              ${
+                caption
+                  ? `
+                    <figcaption class="gallery-caption">
+                      ${caption}
+                    </figcaption>
+                  `
+                  : ""
+              }
+
+            </figure>
+          `;
+        }
+      )
+      .join("");
+}
+
+
+// ================================================================
+// SUPPORTERS
+// ================================================================
+
+async function initialiseSupporters() {
+  try {
+    const data =
+      await fetchJson(
+        CONFIG.supportersApiUrl
+      );
+
+
+    const parsed =
+      normaliseSupporterResponse(
+        data
+      );
+
+
+    state.supporters =
+      parsed.supporters;
+
+
+    renderSupporters(
+      parsed.totalBeers
+    );
+
+  } catch (error) {
+    console.warn(
+      "[KirkDrinks] Live supporter API unavailable. Trying fallback:",
+      error
+    );
+
+
+    await loadSupporterFallback();
+  }
+}
+
+
+async function loadSupporterFallback() {
+  try {
+    const data =
+      await fetchJson(
+        CONFIG.supportersFallbackUrl
+      );
+
+
+    const parsed =
+      normaliseSupporterResponse(
+        data
+      );
+
+
+    state.supporters =
+      parsed.supporters;
+
+
+    renderSupporters(
+      parsed.totalBeers
+    );
+
+  } catch (error) {
+    console.error(
+      "[KirkDrinks] Supporter fallback failed:",
+      error
+    );
+
+
+    state.supporters = [];
+
+
+    renderSupporters(0);
+  }
+}
+
+
+function normaliseSupporterResponse(
+  data
+) {
+  if (Array.isArray(data)) {
+    return {
+      supporters:
+        data.filter(
+          supporter =>
+            supporter &&
+            typeof supporter ===
+            "object"
+        ),
+
+      totalBeers:
+        null
+    };
+  }
+
+
+  if (
+    data &&
+    typeof data === "object" &&
+    Array.isArray(
+      data.supporters
+    )
+  ) {
+    return {
+      supporters:
+        data.supporters.filter(
+          supporter =>
+            supporter &&
+            typeof supporter ===
+            "object"
+        ),
+
+      totalBeers:
+        Number.isFinite(
+          Number(
+            data.totalBeers
+          )
+        )
+          ? Number(
+              data.totalBeers
+            )
+          : null
+    };
+  }
+
+
+  throw new Error(
+    "Unexpected supporter response."
+  );
+}
+
+
+function renderSupporters(
+  suppliedTotal = null
+) {
+  const supporters =
+    state.supporters;
+
+
+  if (DOM.supportersGrid) {
+    if (supporters.length === 0) {
+      DOM.supportersGrid.innerHTML = `
+        <div class="empty-state">
+
+          <strong>
+            No funded pints yet.
+          </strong>
+
+          <p>
+            Somebody has to become the first legend.
+          </p>
+
+        </div>
+      `;
+
+    } else {
+      DOM.supportersGrid.innerHTML =
+        supporters
+          .map(
+            supporter =>
+              createSupporterCard(
+                supporter
+              )
+          )
+          .join("");
+    }
+  }
+
+
+  const calculatedTotal =
+    supporters.reduce(
+      (total, supporter) =>
+        total +
+        getSupporterBeerCount(
+          supporter
+        ),
+      0
+    );
+
+
+  const total =
+    suppliedTotal !== null &&
+    Number.isFinite(
+      Number(
+        suppliedTotal
+      )
+    )
+      ? Number(
+          suppliedTotal
+        )
+      : calculatedTotal;
+
+
+  if (DOM.fundedCount) {
+    DOM.fundedCount.textContent =
+      String(total);
+  }
+
+
+  if (DOM.supporterCount) {
+    DOM.supporterCount.textContent =
+      String(total);
+  }
+
+
+  updateBeerMeter(
+    total
+  );
+}
+
+
+function createSupporterCard(
+  supporter
+) {
+  const name =
+    escapeHtml(
+      supporter.name ||
+      supporter.supporter_name ||
+      "Anonymous legend"
+    );
+
+
+  const message =
+    escapeHtml(
+      supporter.message ||
+      supporter.note ||
+      supporter.support_note ||
+      ""
+    );
+
+
+  const beers =
+    getSupporterBeerCount(
+      supporter
+    );
+
+
+  return `
+    <article class="supporter">
+
+      <div class="supporter-top">
+
+        <strong>
+          ${name}
+        </strong>
+
+        <span class="beers">
+          🍺 × ${beers}
+        </span>
+
+      </div>
+
+
+      ${
+        message
+          ? `
+            <p>
+              “${message}”
+            </p>
+          `
+          : ""
+      }
+
+    </article>
+  `;
+}
+
+
+function getSupporterBeerCount(
+  supporter
+) {
+  const possibleValues = [
+    supporter.beers,
+    supporter.coffee_count,
+    supporter.coffeeCount,
+    supporter.quantity
+  ];
+
+
+  for (
+    const value of
+    possibleValues
+  ) {
+    const number =
+      Number(value);
+
+
+    if (
+      Number.isFinite(number) &&
+      number > 0
+    ) {
+      return Math.floor(
+        number
+      );
+    }
+  }
+
+
+  return 1;
+}
+
+
+function updateBeerMeter(
+  total
+) {
+  if (!DOM.beerMeterFill) {
+    return;
+  }
+
+
+  if (total <= 0) {
+    DOM.beerMeterFill.style.width =
+      "0%";
+
+    return;
+  }
+
+
+  const progress =
+    total % 10;
+
+
+  const percentage =
+    progress === 0
+      ? 100
+      : progress * 10;
+
+
+  DOM.beerMeterFill.style.width =
+    `${percentage}%`;
+}
+
+
+// ================================================================
+// NAVIGATION
+// ================================================================
+
+function initialiseNavigation() {
+  if (
+    !DOM.menuToggle ||
+    !DOM.siteNav
+  ) {
+    return;
+  }
+
+
+  DOM.menuToggle.addEventListener(
+    "click",
+    () => {
+      const isOpen =
+        DOM.siteNav.classList
+          .contains("open");
+
+
+      DOM.siteNav.classList.toggle(
+        "open",
+        !isOpen
+      );
+
+
+      DOM.menuToggle.setAttribute(
+        "aria-expanded",
+        String(!isOpen)
+      );
+    }
+  );
+
+
+  DOM.siteNav
+    .querySelectorAll("a")
+    .forEach(
+      link => {
+        link.addEventListener(
+          "click",
+          () => {
+            DOM.siteNav.classList.remove(
+              "open"
+            );
+
+
+            DOM.menuToggle.setAttribute(
+              "aria-expanded",
+              "false"
+            );
+          }
+        );
+      }
+    );
+}
+
+
+// ================================================================
+// FOOTER
+// ================================================================
+
+function initialiseFooter() {
+  if (!DOM.year) {
+    return;
+  }
+
+
+  DOM.year.textContent =
+    String(
+      new Date().getFullYear()
+    );
+}
+
+
+// ================================================================
+// FETCH
+// ================================================================
+
+async function fetchJson(
+  url
+) {
+  const response =
+    await fetch(
+      url,
+      {
+        method: "GET",
+
+        headers: {
+          "Accept":
+            "application/json"
+        },
+
+        cache:
+          "no-store"
+      }
+    );
+
+
+  if (!response.ok) {
+    throw new Error(
+      `${url} returned HTTP ${response.status}`
+    );
+  }
+
+
+  const text =
+    await response.text();
+
+
+  try {
+    return JSON.parse(
+      text
+    );
+
+  } catch (error) {
+    console.error(
+      `[KirkDrinks] Invalid JSON returned by ${url}:`,
+      error
+    );
+
+
+    throw new Error(
+      `${url} did not return valid JSON.`
+    );
+  }
+}
+
+
+// ================================================================
+// PRICE
+// ================================================================
+
+function getReviewPrice(
+  review
+) {
+  const venue =
+    getVenue(
+      review
+    );
+
+
+  const amount =
+    venue &&
+    venue.pricePaid !== undefined &&
+    venue.pricePaid !== null
+      ? venue.pricePaid
+      : review.pricePaid;
+
+
+  const currency =
+    venue &&
+    venue.currency
+      ? venue.currency
+      : review.currency;
+
+
+  return formatMoney(
+    amount,
+    currency
+  );
+}
+
+
+function getVenuePrice(
+  venue
+) {
+  return formatMoney(
+    venue.pricePaid,
+    venue.currency
+  );
+}
+
+
+function formatMoney(
+  amount,
+  currency
+) {
+  if (
+    amount === null ||
+    amount === undefined ||
+    amount === ""
+  ) {
+    return "";
+  }
+
+
+  const number =
+    Number(amount);
+
+
+  if (!Number.isFinite(number)) {
+    return "";
+  }
+
+
+  const currencyCode =
+    typeof currency === "string" &&
+    /^[A-Za-z]{3}$/.test(
+      currency
+    )
+      ? currency.toUpperCase()
+      : "GBP";
+
+
+  try {
+    return new Intl.NumberFormat(
+      "en-GB",
+      {
+        style:
+          "currency",
+
+        currency:
+          currencyCode,
+
+        minimumFractionDigits:
+          2,
+
+        maximumFractionDigits:
+          2
+      }
+    ).format(number);
+
+  } catch {
+    return `${number.toFixed(2)} ${currencyCode}`;
+  }
+}
+
+
+// ================================================================
+// SCORE
+// ================================================================
+
+function formatScore(
+  value
+) {
+  const score =
+    Number(value);
+
+
+  if (!Number.isFinite(score)) {
+    return "—";
+  }
+
+
+  return String(
+    Math.round(
+      score * 100
+    ) / 100
+  );
+}
+
+
+function optionalScore(
+  value
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+
+  const score =
+    Number(value);
+
+
+  if (
+    !Number.isFinite(score) ||
+    score < 0 ||
+    score > 10
+  ) {
+    return null;
+  }
+
+
+  return score;
+}
+
+
+// ================================================================
+// VENUE IDENTIFIERS
+// ================================================================
+
+function createVenueKey(
+  venue,
+  review
+) {
+  const name =
+    String(
+      venue.name ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const location =
+    String(
+      venue.location ||
+      review.location ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  return `${name}|${location}`;
+}
+
+
+function createVenueId(
+  venue
+) {
+  const value =
+    String(
+      venue.name ||
+      "venue"
+    )
+      .toLowerCase()
+      .trim()
+      .replace(
+        /[^a-z0-9]+/g,
+        "-"
+      )
+      .replace(
+        /^-+|-+$/g,
+        ""
+      );
+
+
+  return `venue-${value || "unknown"}`;
+}
+
+
+// ================================================================
+// ASSET VALIDATION
+// ================================================================
+
+function safeAssetPath(
+  value
+) {
+  if (
+    typeof value !== "string"
+  ) {
+    return "";
+  }
+
+
+  const path =
+    value.trim();
+
+
+  if (
+    /^assets\/[A-Za-z0-9._/-]+$/.test(
+      path
+    )
+  ) {
+    return path;
+  }
+
+
+  return "";
+}
+
+
+// ================================================================
+// HTML ESCAPING
+// ================================================================
+
+function escapeHtml(
+  value
+) {
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+  }
