@@ -1140,10 +1140,7 @@ async function initialisePintMap() {
 
 
   /*
-   * Don't even request MapLibre when there are no coordinates.
-   *
-   * This is important:
-   * the current reviews can work perfectly with coordinates:null.
+   * Don't request MapLibre when there are no coordinates.
    */
 
   if (locations.length === 0) {
@@ -1156,10 +1153,8 @@ async function initialisePintMap() {
 
 
   /*
-   * MapLibre is loaded ONLY now.
-   *
-   * If CSP blocks this import, the resulting rejection is
-   * contained inside initialisePintMap().
+   * MapLibre remains dynamically imported so failure cannot
+   * interfere with the core site.
    */
 
   let mapModule;
@@ -1258,11 +1253,6 @@ async function initialisePintMap() {
 
     locations.forEach(
       location => {
-        addPintMarker(
-          location
-        );
-
-
         bounds.extend([
           location.lng,
           location.lat
@@ -1271,9 +1261,18 @@ async function initialisePintMap() {
     );
 
 
+    /*
+     * Sources and layers must be added once the map style is ready.
+     */
+
     state.map.once(
       "load",
       () => {
+        addClusteredPintLayer(
+          locations
+        );
+
+
         if (
           locations.length > 1
         ) {
@@ -1322,7 +1321,7 @@ async function initialisePintMap() {
 
 
     console.info(
-      `[KirkDrinks] Pint map initialised with ${locations.length} locations.`
+      `[KirkDrinks] Pint map initialising with ${locations.length} venue locations.`
     );
 
   } catch (error) {
@@ -1378,6 +1377,14 @@ function buildMapLocations(
         venue.name ||
         "Unknown venue";
 
+
+      /*
+       * Reviews from the exact same venue are consolidated BEFORE
+       * geographic clustering.
+       *
+       * This means five beers at The Ale House become one venue
+       * point containing five beer reviews.
+       */
 
       const key =
         [
@@ -1488,11 +1495,11 @@ function getCoordinates(
 
 
 // ================================================================
-// MAP MARKERS
+// MAP CLUSTERING
 // ================================================================
 
-function addPintMarker(
-  location
+function addClusteredPintLayer(
+  locations
 ) {
   if (
     !state.map ||
@@ -1502,58 +1509,629 @@ function addPintMarker(
   }
 
 
-  const marker =
-    document.createElement(
-      "button"
-    );
+  /*
+   * Convert our venue collection into GeoJSON.
+   *
+   * Each feature represents ONE VENUE rather than one beer.
+   */
+
+  const geoJson = {
+    type:
+      "FeatureCollection",
+
+    features:
+      locations.map(
+        (location, index) => ({
+          type:
+            "Feature",
+
+          geometry: {
+            type:
+              "Point",
+
+            coordinates: [
+              location.lng,
+              location.lat
+            ]
+          },
+
+          properties: {
+            locationIndex:
+              index,
+
+            venueName:
+              location.venueName,
+
+            beerCount:
+              location.reviews.length
+          }
+        })
+      )
+  };
 
 
-  marker.type =
-    "button";
+  /*
+   * Native MapLibre GeoJSON clustering.
+   *
+   * Nearby venues are grouped together until the user zooms in.
+   */
 
+  state.map.addSource(
+    "pint-locations",
+    {
+      type:
+        "geojson",
 
-  marker.className =
-    "pint-marker";
+      data:
+        geoJson,
 
+      cluster:
+        true,
 
-  marker.textContent =
-    "🍺";
+      clusterMaxZoom:
+        13,
 
-
-  marker.setAttribute(
-    "aria-label",
-    `View beers at ${location.venueName}`
+      clusterRadius:
+        50
+    }
   );
 
 
-  const popup =
-    new state.maplibregl.Popup({
-      offset: 28,
-      maxWidth: "320px"
-    })
-      .setHTML(
-        createMapPopup(
-          location
-        )
+  /*
+   * --------------------------------------------------------------
+   * CLUSTER CIRCLES
+   * --------------------------------------------------------------
+   */
+
+  state.map.addLayer({
+    id:
+      "pint-clusters",
+
+    type:
+      "circle",
+
+    source:
+      "pint-locations",
+
+    filter: [
+      "has",
+      "point_count"
+    ],
+
+    paint: {
+      "circle-radius": [
+        "step",
+
+        [
+          "get",
+          "point_count"
+        ],
+
+        22,
+
+        5,
+        26,
+
+        10,
+        30,
+
+        25,
+        34
+      ],
+
+      "circle-color":
+        "#f4b942",
+
+      "circle-stroke-width":
+        3,
+
+      "circle-stroke-color":
+        "#ffffff"
+    }
+  });
+
+
+  /*
+   * Cluster count.
+   *
+   * This number represents nearby VENUES.
+   */
+
+  state.map.addLayer({
+    id:
+      "pint-cluster-count",
+
+    type:
+      "symbol",
+
+    source:
+      "pint-locations",
+
+    filter: [
+      "has",
+      "point_count"
+    ],
+
+    layout: {
+      "text-field": [
+        "concat",
+
+        "🍺 ",
+
+        [
+          "get",
+          "point_count_abbreviated"
+        ]
+      ],
+
+      "text-size":
+        15,
+
+      "text-allow-overlap":
+        true
+    },
+
+    paint: {
+      "text-color":
+        "#111111"
+    }
+  });
+
+
+  /*
+   * --------------------------------------------------------------
+   * INDIVIDUAL VENUE CIRCLES
+   * --------------------------------------------------------------
+   */
+
+  state.map.addLayer({
+    id:
+      "pint-venues",
+
+    type:
+      "circle",
+
+    source:
+      "pint-locations",
+
+    filter: [
+      "!",
+      [
+        "has",
+        "point_count"
+      ]
+    ],
+
+    paint: {
+      "circle-radius": [
+        "case",
+
+        [
+          ">",
+          [
+            "get",
+            "beerCount"
+          ],
+          1
+        ],
+
+        19,
+
+        17
+      ],
+
+      "circle-color":
+        "#f4b942",
+
+      "circle-stroke-width":
+        3,
+
+      "circle-stroke-color":
+        "#ffffff"
+    }
+  });
+
+
+  /*
+   * Individual venue label.
+   *
+   * One beer:
+   *
+   * 🍺
+   *
+   * Multiple beers at the same venue:
+   *
+   * 🍺 5
+   */
+
+  state.map.addLayer({
+    id:
+      "pint-venue-labels",
+
+    type:
+      "symbol",
+
+    source:
+      "pint-locations",
+
+    filter: [
+      "!",
+      [
+        "has",
+        "point_count"
+      ]
+    ],
+
+    layout: {
+      "text-field": [
+        "case",
+
+        [
+          ">",
+          [
+            "get",
+            "beerCount"
+          ],
+          1
+        ],
+
+        [
+          "concat",
+
+          "🍺 ",
+
+          [
+            "to-string",
+            [
+              "get",
+              "beerCount"
+            ]
+          ]
+        ],
+
+        "🍺"
+      ],
+
+      "text-size":
+        14,
+
+      "text-allow-overlap":
+        true
+    },
+
+    paint: {
+      "text-color":
+        "#111111"
+    }
+  });
+
+
+  /*
+   * --------------------------------------------------------------
+   * CLUSTER CLICK
+   * --------------------------------------------------------------
+   *
+   * Clicking a cluster calculates the zoom required to split that
+   * cluster into its children.
+   */
+
+  state.map.on(
+    "click",
+    "pint-clusters",
+    async event => {
+      const features =
+        state.map.queryRenderedFeatures(
+          event.point,
+          {
+            layers: [
+              "pint-clusters"
+            ]
+          }
+        );
+
+
+      const feature =
+        features[0];
+
+
+      if (
+        !feature ||
+        !feature.properties
+      ) {
+        return;
+      }
+
+
+      const clusterId =
+        feature.properties.cluster_id;
+
+
+      if (
+        clusterId === undefined ||
+        clusterId === null
+      ) {
+        return;
+      }
+
+
+      try {
+        const source =
+          state.map.getSource(
+            "pint-locations"
+          );
+
+
+        const zoom =
+          await source
+            .getClusterExpansionZoom(
+              clusterId
+            );
+
+
+        state.map.easeTo({
+          center:
+            feature.geometry.coordinates,
+
+          zoom:
+            zoom
+        });
+
+      } catch (error) {
+        console.error(
+          "[KirkDrinks] Couldn't expand map cluster:",
+          error
+        );
+      }
+    }
+  );
+
+
+  /*
+   * --------------------------------------------------------------
+   * VENUE CLICK
+   * --------------------------------------------------------------
+   */
+
+  state.map.on(
+    "click",
+    "pint-venues",
+    event => {
+      openVenueMapPopup(
+        event,
+        locations
       );
+    }
+  );
 
 
-  new state.maplibregl.Marker({
-    element: marker,
-    anchor: "bottom"
+  /*
+   * Symbol labels can receive the click instead of the underlying
+   * circle, so both layers intentionally open the same popup.
+   */
+
+  state.map.on(
+    "click",
+    "pint-venue-labels",
+    event => {
+      openVenueMapPopup(
+        event,
+        locations
+      );
+    }
+  );
+
+
+  /*
+   * --------------------------------------------------------------
+   * CURSOR FEEDBACK
+   * --------------------------------------------------------------
+   */
+
+  [
+    "pint-clusters",
+    "pint-cluster-count",
+    "pint-venues",
+    "pint-venue-labels"
+  ]
+    .forEach(
+      layerId => {
+        state.map.on(
+          "mouseenter",
+          layerId,
+          () => {
+            state.map
+              .getCanvas()
+              .style.cursor =
+                "pointer";
+          }
+        );
+
+
+        state.map.on(
+          "mouseleave",
+          layerId,
+          () => {
+            state.map
+              .getCanvas()
+              .style.cursor =
+                "";
+          }
+        );
+      }
+    );
+
+
+  /*
+   * The count text sits on top of the cluster circle.
+   *
+   * Give the text layer the same zoom behaviour so clicking
+   * directly on the number also expands the cluster.
+   */
+
+  state.map.on(
+    "click",
+    "pint-cluster-count",
+    async event => {
+      const feature =
+        event.features &&
+        event.features[0];
+
+
+      if (
+        !feature ||
+        !feature.properties
+      ) {
+        return;
+      }
+
+
+      const clusterId =
+        feature.properties.cluster_id;
+
+
+      if (
+        clusterId === undefined ||
+        clusterId === null
+      ) {
+        return;
+      }
+
+
+      try {
+        const source =
+          state.map.getSource(
+            "pint-locations"
+          );
+
+
+        const zoom =
+          await source
+            .getClusterExpansionZoom(
+              clusterId
+            );
+
+
+        state.map.easeTo({
+          center:
+            feature.geometry.coordinates,
+
+          zoom:
+            zoom
+        });
+
+      } catch (error) {
+        console.error(
+          "[KirkDrinks] Couldn't expand map cluster:",
+          error
+        );
+      }
+    }
+  );
+
+
+  console.info(
+    `[KirkDrinks] Native clustering enabled for ${locations.length} venues.`
+  );
+}
+
+
+// ================================================================
+// MAP VENUE POPUP
+// ================================================================
+
+function openVenueMapPopup(
+  event,
+  locations
+) {
+  if (
+    !event ||
+    !event.features ||
+    event.features.length === 0
+  ) {
+    return;
+  }
+
+
+  const feature =
+    event.features[0];
+
+
+  const locationIndex =
+    Number(
+      feature.properties
+        ?.locationIndex
+    );
+
+
+  if (
+    !Number.isInteger(
+      locationIndex
+    ) ||
+    !locations[
+      locationIndex
+    ]
+  ) {
+    console.warn(
+      "[KirkDrinks] Map venue had an invalid location index."
+    );
+
+    return;
+  }
+
+
+  const location =
+    locations[
+      locationIndex
+    ];
+
+
+  const coordinates =
+    feature.geometry.coordinates
+      .slice();
+
+
+  /*
+   * Correct longitude wrapping around the international date line.
+   */
+
+  while (
+    Math.abs(
+      event.lngLat.lng -
+      coordinates[0]
+    ) > 180
+  ) {
+    coordinates[0] +=
+      event.lngLat.lng >
+      coordinates[0]
+        ? 360
+        : -360;
+  }
+
+
+  new state.maplibregl.Popup({
+    offset:
+      24,
+
+    maxWidth:
+      "320px"
   })
-    .setLngLat([
-      location.lng,
-      location.lat
-    ])
-    .setPopup(
-      popup
+    .setLngLat(
+      coordinates
+    )
+    .setHTML(
+      createMapPopup(
+        location
+      )
     )
     .addTo(
       state.map
     );
 }
 
+
+// ================================================================
+// MAP POPUP
+// ================================================================
 
 function createMapPopup(
   location
@@ -1681,878 +2259,4 @@ function showMapUnavailable(
 
 
   if (DOM.mapStatus) {
-    DOM.mapStatus.textContent =
-      message;
-  }
-}
-
-
-function hideMapUnavailable() {
-  if (DOM.pintMap) {
-    DOM.pintMap.hidden =
-      false;
-  }
-
-
-  if (DOM.mapEmpty) {
-    DOM.mapEmpty.hidden =
-      true;
-  }
-}
-
-
-// ================================================================
-// GALLERY
-// ================================================================
-
-async function initialiseGallery() {
-  if (!DOM.galleryGrid) {
-    return;
-  }
-
-
-  try {
-    const data =
-      await fetchJson(
-        CONFIG.galleryUrl
-      );
-
-
-    if (!Array.isArray(data)) {
-      throw new Error(
-        "gallery.json must contain a JSON array."
-      );
-    }
-
-
-    state.gallery =
-      data.filter(
-        item =>
-          item &&
-          typeof item === "object"
-      );
-
-
-    renderGallery();
-
-  } catch (error) {
-    console.warn(
-      "[KirkDrinks] Gallery unavailable:",
-      error
-    );
-
-
-    DOM.galleryGrid.innerHTML = `
-      <div class="empty-state">
-        Beer Cam currently unavailable.
-      </div>
-    `;
-  }
-}
-
-
-function renderGallery() {
-  if (!DOM.galleryGrid) {
-    return;
-  }
-
-
-  if (state.gallery.length === 0) {
-    DOM.galleryGrid.innerHTML = `
-      <div class="empty-state">
-        Beer Cam coming soon.
-      </div>
-    `;
-
-    return;
-  }
-
-
-  DOM.galleryGrid.innerHTML =
-    state.gallery
-      .map(
-        item => {
-          const image =
-            safeAssetPath(
-              item.image
-            );
-
-
-          if (!image) {
-            return "";
-          }
-
-
-          const alt =
-            escapeHtml(
-              item.alt ||
-              item.caption ||
-              "Beer photo"
-            );
-
-
-          const caption =
-            escapeHtml(
-              item.caption ||
-              ""
-            );
-
-
-          return `
-            <figure class="gallery-item">
-
-              <img
-                src="${image}"
-                alt="${alt}"
-                loading="lazy"
-                decoding="async"
-              >
-
-              ${
-                caption
-                  ? `
-                    <figcaption class="gallery-caption">
-                      ${caption}
-                    </figcaption>
-                  `
-                  : ""
-              }
-
-            </figure>
-          `;
-        }
-      )
-      .join("");
-}
-
-
-// ================================================================
-// SUPPORTERS
-// ================================================================
-
-async function initialiseSupporters() {
-  try {
-    const data =
-      await fetchJson(
-        CONFIG.supportersApiUrl
-      );
-
-
-    const parsed =
-      normaliseSupporterResponse(
-        data
-      );
-
-
-    state.supporters =
-      parsed.supporters;
-
-
-    renderSupporters(
-      parsed.totalBeers
-    );
-
-  } catch (error) {
-    console.warn(
-      "[KirkDrinks] Live supporter API unavailable. Trying fallback:",
-      error
-    );
-
-
-    await loadSupporterFallback();
-  }
-}
-
-
-async function loadSupporterFallback() {
-  try {
-    const data =
-      await fetchJson(
-        CONFIG.supportersFallbackUrl
-      );
-
-
-    const parsed =
-      normaliseSupporterResponse(
-        data
-      );
-
-
-    state.supporters =
-      parsed.supporters;
-
-
-    renderSupporters(
-      parsed.totalBeers
-    );
-
-  } catch (error) {
-    console.error(
-      "[KirkDrinks] Supporter fallback failed:",
-      error
-    );
-
-
-    state.supporters = [];
-
-
-    renderSupporters(0);
-  }
-}
-
-
-function normaliseSupporterResponse(
-  data
-) {
-  if (Array.isArray(data)) {
-    return {
-      supporters:
-        data.filter(
-          supporter =>
-            supporter &&
-            typeof supporter ===
-            "object"
-        ),
-
-      totalBeers:
-        null
-    };
-  }
-
-
-  if (
-    data &&
-    typeof data === "object" &&
-    Array.isArray(
-      data.supporters
-    )
-  ) {
-    return {
-      supporters:
-        data.supporters.filter(
-          supporter =>
-            supporter &&
-            typeof supporter ===
-            "object"
-        ),
-
-      totalBeers:
-        Number.isFinite(
-          Number(
-            data.totalBeers
-          )
-        )
-          ? Number(
-              data.totalBeers
-            )
-          : null
-    };
-  }
-
-
-  throw new Error(
-    "Unexpected supporter response."
-  );
-}
-
-
-function renderSupporters(
-  suppliedTotal = null
-) {
-  const supporters =
-    state.supporters;
-
-
-  if (DOM.supportersGrid) {
-    if (supporters.length === 0) {
-      DOM.supportersGrid.innerHTML = `
-        <div class="empty-state">
-
-          <strong>
-            No funded pints yet.
-          </strong>
-
-          <p>
-            Somebody has to become the first legend.
-          </p>
-
-        </div>
-      `;
-
-    } else {
-      DOM.supportersGrid.innerHTML =
-        supporters
-          .map(
-            supporter =>
-              createSupporterCard(
-                supporter
-              )
-          )
-          .join("");
-    }
-  }
-
-
-  const calculatedTotal =
-    supporters.reduce(
-      (total, supporter) =>
-        total +
-        getSupporterBeerCount(
-          supporter
-        ),
-      0
-    );
-
-
-  const total =
-    suppliedTotal !== null &&
-    Number.isFinite(
-      Number(
-        suppliedTotal
-      )
-    )
-      ? Number(
-          suppliedTotal
-        )
-      : calculatedTotal;
-
-
-  if (DOM.fundedCount) {
-    DOM.fundedCount.textContent =
-      String(total);
-  }
-
-
-  if (DOM.supporterCount) {
-    DOM.supporterCount.textContent =
-      String(total);
-  }
-
-
-  updateBeerMeter(
-    total
-  );
-}
-
-
-function createSupporterCard(
-  supporter
-) {
-  const name =
-    escapeHtml(
-      supporter.name ||
-      supporter.supporter_name ||
-      "Anonymous legend"
-    );
-
-
-  const message =
-    escapeHtml(
-      supporter.message ||
-      supporter.note ||
-      supporter.support_note ||
-      ""
-    );
-
-
-  const beers =
-    getSupporterBeerCount(
-      supporter
-    );
-
-
-  return `
-    <article class="supporter">
-
-      <div class="supporter-top">
-
-        <strong>
-          ${name}
-        </strong>
-
-        <span class="beers">
-          🍺 × ${beers}
-        </span>
-
-      </div>
-
-
-      ${
-        message
-          ? `
-            <p>
-              “${message}”
-            </p>
-          `
-          : ""
-      }
-
-    </article>
-  `;
-}
-
-
-function getSupporterBeerCount(
-  supporter
-) {
-  const possibleValues = [
-    supporter.beers,
-    supporter.coffee_count,
-    supporter.coffeeCount,
-    supporter.quantity
-  ];
-
-
-  for (
-    const value of
-    possibleValues
-  ) {
-    const number =
-      Number(value);
-
-
-    if (
-      Number.isFinite(number) &&
-      number > 0
-    ) {
-      return Math.floor(
-        number
-      );
-    }
-  }
-
-
-  return 1;
-}
-
-
-function updateBeerMeter(
-  total
-) {
-  if (!DOM.beerMeterFill) {
-    return;
-  }
-
-
-  if (total <= 0) {
-    DOM.beerMeterFill.style.width =
-      "0%";
-
-    return;
-  }
-
-
-  const progress =
-    total % 10;
-
-
-  const percentage =
-    progress === 0
-      ? 100
-      : progress * 10;
-
-
-  DOM.beerMeterFill.style.width =
-    `${percentage}%`;
-}
-
-
-// ================================================================
-// NAVIGATION
-// ================================================================
-
-function initialiseNavigation() {
-  if (
-    !DOM.menuToggle ||
-    !DOM.siteNav
-  ) {
-    return;
-  }
-
-
-  DOM.menuToggle.addEventListener(
-    "click",
-    () => {
-      const isOpen =
-        DOM.siteNav.classList
-          .contains("open");
-
-
-      DOM.siteNav.classList.toggle(
-        "open",
-        !isOpen
-      );
-
-
-      DOM.menuToggle.setAttribute(
-        "aria-expanded",
-        String(!isOpen)
-      );
-    }
-  );
-
-
-  DOM.siteNav
-    .querySelectorAll("a")
-    .forEach(
-      link => {
-        link.addEventListener(
-          "click",
-          () => {
-            DOM.siteNav.classList.remove(
-              "open"
-            );
-
-
-            DOM.menuToggle.setAttribute(
-              "aria-expanded",
-              "false"
-            );
-          }
-        );
-      }
-    );
-}
-
-
-// ================================================================
-// FOOTER
-// ================================================================
-
-function initialiseFooter() {
-  if (!DOM.year) {
-    return;
-  }
-
-
-  DOM.year.textContent =
-    String(
-      new Date().getFullYear()
-    );
-}
-
-
-// ================================================================
-// FETCH
-// ================================================================
-
-async function fetchJson(
-  url
-) {
-  const response =
-    await fetch(
-      url,
-      {
-        method: "GET",
-
-        headers: {
-          "Accept":
-            "application/json"
-        },
-
-        cache:
-          "no-store"
-      }
-    );
-
-
-  if (!response.ok) {
-    throw new Error(
-      `${url} returned HTTP ${response.status}`
-    );
-  }
-
-
-  const text =
-    await response.text();
-
-
-  try {
-    return JSON.parse(
-      text
-    );
-
-  } catch (error) {
-    console.error(
-      `[KirkDrinks] Invalid JSON returned by ${url}:`,
-      error
-    );
-
-
-    throw new Error(
-      `${url} did not return valid JSON.`
-    );
-  }
-}
-
-
-// ================================================================
-// PRICE
-// ================================================================
-
-function getReviewPrice(
-  review
-) {
-  const venue =
-    getVenue(
-      review
-    );
-
-
-  const amount =
-    venue &&
-    venue.pricePaid !== undefined &&
-    venue.pricePaid !== null
-      ? venue.pricePaid
-      : review.pricePaid;
-
-
-  const currency =
-    venue &&
-    venue.currency
-      ? venue.currency
-      : review.currency;
-
-
-  return formatMoney(
-    amount,
-    currency
-  );
-}
-
-
-function getVenuePrice(
-  venue
-) {
-  return formatMoney(
-    venue.pricePaid,
-    venue.currency
-  );
-}
-
-
-function formatMoney(
-  amount,
-  currency
-) {
-  if (
-    amount === null ||
-    amount === undefined ||
-    amount === ""
-  ) {
-    return "";
-  }
-
-
-  const number =
-    Number(amount);
-
-
-  if (!Number.isFinite(number)) {
-    return "";
-  }
-
-
-  const currencyCode =
-    typeof currency === "string" &&
-    /^[A-Za-z]{3}$/.test(
-      currency
-    )
-      ? currency.toUpperCase()
-      : "GBP";
-
-
-  try {
-    return new Intl.NumberFormat(
-      "en-GB",
-      {
-        style:
-          "currency",
-
-        currency:
-          currencyCode,
-
-        minimumFractionDigits:
-          2,
-
-        maximumFractionDigits:
-          2
-      }
-    ).format(number);
-
-  } catch {
-    return `${number.toFixed(2)} ${currencyCode}`;
-  }
-}
-
-
-// ================================================================
-// SCORE
-// ================================================================
-
-function formatScore(
-  value
-) {
-  const score =
-    Number(value);
-
-
-  if (!Number.isFinite(score)) {
-    return "—";
-  }
-
-
-  return String(
-    Math.round(
-      score * 100
-    ) / 100
-  );
-}
-
-
-function optionalScore(
-  value
-) {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
-    return null;
-  }
-
-
-  const score =
-    Number(value);
-
-
-  if (
-    !Number.isFinite(score) ||
-    score < 0 ||
-    score > 10
-  ) {
-    return null;
-  }
-
-
-  return score;
-}
-
-
-// ================================================================
-// VENUE IDENTIFIERS
-// ================================================================
-
-function createVenueKey(
-  venue,
-  review
-) {
-  const name =
-    String(
-      venue.name ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  const location =
-    String(
-      venue.location ||
-      review.location ||
-      ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  return `${name}|${location}`;
-}
-
-
-function createVenueId(
-  venue
-) {
-  const value =
-    String(
-      venue.name ||
-      "venue"
-    )
-      .toLowerCase()
-      .trim()
-      .replace(
-        /[^a-z0-9]+/g,
-        "-"
-      )
-      .replace(
-        /^-+|-+$/g,
-        ""
-      );
-
-
-  return `venue-${value || "unknown"}`;
-}
-
-
-// ================================================================
-// ASSET VALIDATION
-// ================================================================
-
-function safeAssetPath(
-  value
-) {
-  if (
-    typeof value !== "string"
-  ) {
-    return "";
-  }
-
-
-  const path =
-    value.trim();
-
-
-  if (
-    /^assets\/[A-Za-z0-9._/-]+$/.test(
-      path
-    )
-  ) {
-    return path;
-  }
-
-
-  return "";
-}
-
-
-// ================================================================
-// HTML ESCAPING
-// ================================================================
-
-function escapeHtml(
-  value
-) {
-  return String(
-    value ?? ""
-  )
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-        }
+    DOM
