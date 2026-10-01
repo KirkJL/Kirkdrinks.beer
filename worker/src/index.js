@@ -33,7 +33,7 @@ export default {
           webhookSecretConfigured: Boolean(env.BMC_WEBHOOK_SECRET),
           timestamp: new Date().toISOString()
         });
-      }
+      } 
 
       // ------------------------------------------------------------
       // BUY ME A COFFEE WEBHOOK
