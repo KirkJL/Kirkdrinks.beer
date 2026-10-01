@@ -1,8 +1,13 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <title>Kirk Drinks Beer | Beer Reviews, Pints & Places</title>
 
@@ -11,41 +16,74 @@
     content="Kirk drinks beer around the world. Honest beer reviews, pub finds, venue scores, travel stories and every pint pinned on the map."
   >
 
-  <meta name="theme-color" content="#14110f">
+  <meta
+    name="theme-color"
+    content="#14110f"
+  >
 
-  <meta property="og:title" content="Kirk Drinks Beer">
+  <!-- Open Graph -->
+  <meta
+    property="og:title"
+    content="Kirk Drinks Beer"
+  >
+
   <meta
     property="og:description"
     content="Pints. Places. Stories. Every beer rated and every place pinned."
   >
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://kirkdrinks.beer/">
 
-  <link rel="canonical" href="https://kirkdrinks.beer/">
+  <meta
+    property="og:type"
+    content="website"
+  >
 
-  <!-- MapLibre / OpenFreeMap -->
-  <link rel="preconnect" href="https://unpkg.com" crossorigin>
-  <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
+  <meta
+    property="og:url"
+    content="https://kirkdrinks.beer/"
+  >
 
+  <!-- Canonical -->
+  <link
+    rel="canonical"
+    href="https://kirkdrinks.beer/"
+  >
+
+  <!--
+    MapLibre CSS.
+
+    JavaScript is imported properly as an ES module
+    at the bottom of this page.
+  -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.css"
   >
 
   <!-- Site CSS -->
-  <link rel="stylesheet" href="styles.css">
+  <link
+    rel="stylesheet"
+    href="styles.css"
+  >
 </head>
+
 
 <body>
 
-  <a class="skip-link" href="#main">
+  <!-- ==========================================================
+       ACCESSIBILITY
+  =========================================================== -->
+
+  <a
+    class="skip-link"
+    href="#main"
+  >
     Skip to content
   </a>
 
 
-  <!-- =========================================================
+  <!-- ==========================================================
        HEADER
-  ========================================================== -->
+  =========================================================== -->
 
   <header class="site-header">
 
@@ -64,15 +102,23 @@
           🍺
         </span>
 
-        <span>
-          <strong>KIRK DRINKS</strong>
-          <em>BEER</em>
+        <span class="brand-copy">
+
+          <strong>
+            KIRK DRINKS
+          </strong>
+
+          <em>
+            BEER
+          </em>
+
         </span>
 
       </a>
 
 
       <button
+        id="menu-toggle"
         class="menu-toggle"
         type="button"
         aria-expanded="false"
@@ -122,16 +168,16 @@
   </header>
 
 
-  <!-- =========================================================
+  <!-- ==========================================================
        MAIN
-  ========================================================== -->
+  =========================================================== -->
 
   <main id="main">
 
 
-    <!-- =======================================================
+    <!-- ========================================================
          HERO
-    ======================================================== -->
+    ========================================================= -->
 
     <section
       id="top"
@@ -147,16 +193,22 @@
       <div class="container hero-grid">
 
 
-        <div>
+        <!-- Hero copy -->
+
+        <div class="hero-content">
 
           <p class="eyebrow">
             Pints. Places. Stories.
           </p>
 
+
           <h1>
-            I drink the beer.<br>
-            <span>You get the verdict.</span>
+            I drink the beer.
+            <span>
+              You get the verdict.
+            </span>
           </h1>
+
 
           <p class="hero-copy">
             No tasting-room waffle. Just honest beer reviews,
@@ -173,6 +225,7 @@
             >
               Explore the pint map
             </a>
+
 
             <a
               class="button secondary"
@@ -196,7 +249,7 @@
 
         <aside
           class="score-card"
-          aria-label="Current beer stats"
+          aria-label="Current Kirk Drinks Beer statistics"
         >
 
           <div class="score-card-top">
@@ -270,9 +323,9 @@
     </section>
 
 
-    <!-- =======================================================
+    <!-- ========================================================
          BEER REVIEWS
-    ======================================================== -->
+    ========================================================= -->
 
     <section
       id="reviews"
@@ -280,7 +333,6 @@
     >
 
       <div class="container">
-
 
         <div class="section-heading">
 
@@ -305,20 +357,31 @@
         </div>
 
 
+        <!--
+          app.js inserts every beer review here.
+
+          Coordinates are NOT required for reviews to render.
+        -->
         <div
           id="reviews-grid"
           class="reviews-grid"
           aria-live="polite"
-        ></div>
+        >
+
+          <noscript>
+            JavaScript is required to load the beer reviews.
+          </noscript>
+
+        </div>
 
       </div>
 
     </section>
 
 
-    <!-- =======================================================
+    <!-- ========================================================
          PINT MAP
-    ======================================================== -->
+    ========================================================= -->
 
     <section
       id="map"
@@ -326,7 +389,6 @@
     >
 
       <div class="container">
-
 
         <div class="section-heading">
 
@@ -353,15 +415,18 @@
 
         <div class="map-shell">
 
-
+          <!-- MapLibre renders inside this element -->
           <div
             id="pint-map"
             class="pint-map"
             role="region"
-            aria-label="Interactive map of beer review venues"
+            aria-label="Interactive map showing beer review venues"
           ></div>
 
 
+          <!--
+            Shown by app.js when no reviews have coordinates.
+          -->
           <div
             id="map-empty"
             class="map-empty"
@@ -369,13 +434,12 @@
           >
 
             <strong>
-              No places pinned yet.
+              The drinking map is waiting for its first pin.
             </strong>
 
             <span>
-              Add coordinates to a venue in
-              <code>data/reviews.json</code>
-              and it appears here automatically.
+              Reviews are still available below — locations
+              appear here once coordinates are added.
             </span>
 
           </div>
@@ -383,9 +447,12 @@
         </div>
 
 
-        <p class="map-note">
-          Map data © OpenStreetMap contributors ·
-          rendered with OpenFreeMap + MapLibre.
+        <p
+          id="map-status"
+          class="map-note"
+          aria-live="polite"
+        >
+          Loading drinking map…
         </p>
 
       </div>
@@ -393,9 +460,9 @@
     </section>
 
 
-    <!-- =======================================================
-         VENUE REVIEWS
-    ======================================================== -->
+    <!-- ========================================================
+         VENUES
+    ========================================================= -->
 
     <section
       id="venues"
@@ -403,7 +470,6 @@
     >
 
       <div class="container">
-
 
         <div class="section-heading">
 
@@ -422,8 +488,8 @@
 
           <p>
             Price matters. The pour matters.
-            And if the place feels like an airport
-            departure lounge, I’m telling you.
+            And if the place feels like an airport departure
+            lounge, I'm telling you.
           </p>
 
         </div>
@@ -454,6 +520,12 @@
         </div>
 
 
+        <!--
+          app.js only renders venue cards where useful
+          venue-review data exists.
+
+          Old reviews with null venue scores remain valid.
+        -->
         <div
           id="venues-grid"
           class="venues-grid"
@@ -465,9 +537,9 @@
     </section>
 
 
-    <!-- =======================================================
-         GALLERY
-    ======================================================== -->
+    <!-- ========================================================
+         BEER CAM
+    ========================================================= -->
 
     <section
       id="gallery"
@@ -475,7 +547,6 @@
     >
 
       <div class="container">
-
 
         <div class="section-heading">
 
@@ -503,6 +574,7 @@
         <div
           id="gallery-grid"
           class="gallery-grid"
+          aria-live="polite"
         ></div>
 
       </div>
@@ -510,9 +582,9 @@
     </section>
 
 
-    <!-- =======================================================
+    <!-- ========================================================
          SUPPORTERS
-    ======================================================== -->
+    ========================================================= -->
 
     <section
       id="supporters"
@@ -520,7 +592,6 @@
     >
 
       <div class="container">
-
 
         <div class="section-heading">
 
@@ -547,9 +618,8 @@
 
         <div
           class="beer-meter"
-          aria-label="Supporter beer count"
+          aria-label="Number of beers funded by supporters"
         >
-
 
           <div class="beer-meter-copy">
 
@@ -557,6 +627,7 @@
               <span id="funded-count">
                 0
               </span>
+
               beers
             </strong>
 
@@ -582,9 +653,17 @@
         </div>
 
 
+        <!--
+          Primary data source:
+          Cloudflare Worker / D1
+
+          Fallback:
+          data/supporters.json
+        -->
         <div
           id="supporters-grid"
           class="supporters-grid"
+          aria-live="polite"
         ></div>
 
       </div>
@@ -592,9 +671,9 @@
     </section>
 
 
-    <!-- =======================================================
+    <!-- ========================================================
          BUY ME A BEER
-    ======================================================== -->
+    ========================================================= -->
 
     <section
       id="buy"
@@ -603,21 +682,22 @@
 
       <div class="container buy-card">
 
-
         <div>
 
           <p class="eyebrow">
             Fund irresponsible journalism
           </p>
 
+
           <h2>
             Buy Kirk a beer.
           </h2>
 
+
           <p>
             Fund the next pint and leave a message.
-            Real donations are added to the round
-            of honour automatically.
+            Real donations are added to the round of honour
+            automatically.
           </p>
 
         </div>
@@ -634,6 +714,7 @@
             🍺 Buy me a beer
           </a>
 
+
           <small>
             Secure checkout handled by Buy Me a Coffee.
           </small>
@@ -645,14 +726,13 @@
     </section>
 
 
-    <!-- =======================================================
+    <!-- ========================================================
          ABOUT
-    ======================================================== -->
+    ========================================================= -->
 
     <section class="section mini-about">
 
       <div class="container about-grid">
-
 
         <div>
 
@@ -669,34 +749,37 @@
 
         <p>
           Because I own
-          <strong>kirkdrinks.beer</strong>,
+          <strong>KirkDrinks.beer</strong>,
           which legally obligated me to do something useful
-          with it. So I’m drinking my way around the world,
-          rating the beers, reviewing the places and pinning
-          the evidence.
+          with it.
+
+          So I'm drinking my way around the world,
+          rating the beers, reviewing the places and
+          pinning the evidence.
         </p>
 
       </div>
 
     </section>
 
-
   </main>
 
 
-  <!-- =========================================================
+  <!-- ==========================================================
        FOOTER
-  ========================================================== -->
+  =========================================================== -->
 
   <footer class="site-footer">
 
     <div class="container footer-grid">
 
       <p>
-        © <span id="year"></span>
+        ©
+        <span id="year"></span>
         Kirk Drinks Beer.
         Please drink responsibly.
       </p>
+
 
       <p>
         Built with HTML, CSS, JavaScript
@@ -708,9 +791,18 @@
   </footer>
 
 
-  <!-- =========================================================
+  <!-- ==========================================================
        JAVASCRIPT
-  ========================================================== -->
+
+       IMPORTANT:
+
+       app.js will import MapLibre itself using:
+
+       import maplibregl from
+       "https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.mjs";
+
+       Do NOT add another MapLibre <script> tag here.
+  =========================================================== -->
 
   <script
     type="module"
@@ -718,4 +810,5 @@
   ></script>
 
 </body>
+
 </html>
