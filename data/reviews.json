@@ -17,7 +17,7 @@
         "lat": 51.889454,
         "lng": 0.902262
       },
-      "pricePaid": 7.20,
+      "pricePaid": 7.2,
       "currency": "GBP",
       "price": 4,
       "pour": 8,
@@ -44,7 +44,7 @@
         "lat": 36.547368,
         "lng": 29.126488
       },
-      "pricePaid": 3.50,
+      "pricePaid": 3.5,
       "currency": "EUR",
       "price": 9,
       "pour": 8,
@@ -68,10 +68,10 @@
       "name": "Brewhouse & Kitchen",
       "location": "Chelmsford",
       "coordinates": {
-        "lat": 51.735870,
+        "lat": 51.73587,
         "lng": 0.468794
       },
-      "pricePaid": 6.70,
+      "pricePaid": 6.7,
       "currency": "GBP",
       "price": 5,
       "pour": 8,
@@ -94,8 +94,11 @@
     "venue": {
       "name": "The Castle Inn",
       "location": "Colchester",
-      "coordinates": 51.889666,0.903443,
-      "pricePaid": 6.70,
+      "coordinates": {
+        "lat": 51.889666,
+        "lng": 0.903443
+      },
+      "pricePaid": 6.7,
       "currency": "GBP",
       "price": 6,
       "pour": 9,
@@ -118,7 +121,10 @@
     "venue": {
       "name": "The Castle Inn",
       "location": "Colchester",
-      "coordinates": 51.889666,0.903443,
+      "coordinates": {
+        "lat": 51.889666,
+        "lng": 0.903443
+      },
       "pricePaid": 6.85,
       "currency": "GBP",
       "price": 7,
@@ -146,7 +152,7 @@
         "lat": 51.736076,
         "lng": 0.467488
       },
-      "pricePaid": 6.10,
+      "pricePaid": 6.1,
       "currency": "GBP",
       "price": 7,
       "pour": 9,
@@ -173,7 +179,7 @@
         "lat": 51.736076,
         "lng": 0.467488
       },
-      "pricePaid": 6.10,
+      "pricePaid": 6.1,
       "currency": "GBP",
       "price": 8,
       "pour": 10,
@@ -197,10 +203,10 @@
       "name": "Brewhouse & Kitchen",
       "location": "Chelmsford",
       "coordinates": {
-        "lat": 51.735870,
+        "lat": 51.73587,
         "lng": 0.468794
       },
-      "pricePaid": 6.70,
+      "pricePaid": 6.7,
       "currency": "GBP",
       "price": 5,
       "pour": 8,
@@ -227,7 +233,7 @@
         "lat": 51.736076,
         "lng": 0.467488
       },
-      "pricePaid": 7.60,
+      "pricePaid": 7.6,
       "currency": "GBP",
       "price": 5,
       "pour": 8,
@@ -254,7 +260,7 @@
         "lat": 51.736076,
         "lng": 0.467488
       },
-      "pricePaid": 6.90,
+      "pricePaid": 6.9,
       "currency": "GBP",
       "price": 6,
       "pour": 9,
@@ -277,8 +283,11 @@
     "venue": {
       "name": "Old Sailor",
       "location": "Albufeira",
-      "coordinates": 37.088685,-8.251331,
-      "pricePaid": 5.80,
+      "coordinates": {
+        "lat": 37.088685,
+        "lng": -8.251331
+      },
+      "pricePaid": 5.8,
       "currency": "EUR",
       "price": 8,
       "pour": 8,
@@ -305,7 +314,7 @@
         "lat": 51.736076,
         "lng": 0.467488
       },
-      "pricePaid": 6.20,
+      "pricePaid": 6.2,
       "currency": "GBP",
       "price": 5,
       "pour": 8,
@@ -328,8 +337,11 @@
     "venue": {
       "name": "The Half Moon",
       "location": "Rayleigh",
-      "coordinates": 51.587583,0.607982,
-      "pricePaid": 6.10,
+      "coordinates": {
+        "lat": 51.587583,
+        "lng": 0.607982
+      },
+      "pricePaid": 6.1,
       "currency": "GBP",
       "price": 8,
       "pour": 8,
@@ -356,7 +368,7 @@
         "lat": 51.736076,
         "lng": 0.467488
       },
-      "pricePaid": 7.40,
+      "pricePaid": 7.4,
       "currency": "GBP",
       "price": 6,
       "pour": 8,
