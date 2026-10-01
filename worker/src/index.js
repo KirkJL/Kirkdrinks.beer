@@ -3,13 +3,16 @@
  *
  * Routes:
  * GET  /health
+ * GET  /api/supporters
  * POST /webhooks/bmc
  *
  * Security:
- * - BMC webhook signatures are verified using HMAC-SHA256.
- * - The raw request body is used for signature verification.
- * - The signing secret exists only in Cloudflare.
- * - Only known BMC event types are accepted.
+ * - BMC webhook signatures verified using HMAC-SHA256.
+ * - Signature verification uses the exact raw request body.
+ * - Webhook secret exists only in Cloudflare.
+ * - Email addresses and unnecessary payment metadata are NOT stored.
+ * - Hidden supporter notes are never published.
+ * - Duplicate webhook events are prevented by provider_event_id UNIQUE.
  */
 
 const BMC_EVENTS = new Set([
@@ -17,15 +20,24 @@ const BMC_EVENTS = new Set([
   "donation.refunded"
 ]);
 
+const ALLOWED_ORIGINS = new Set([
+  "https://kirkdrinks.beer",
+  "https://www.kirkdrinks.beer"
+]);
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
     try {
-      // ------------------------------------------------------------
-      // HEALTH CHECK
-      // ------------------------------------------------------------
-      if (request.method === "GET" && url.pathname === "/health") {
+      // ----------------------------------------------------------
+      // HEALTH
+      // ----------------------------------------------------------
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/health"
+      ) {
         return jsonResponse({
           ok: true,
           service: "kirkdrinks-beer",
@@ -33,11 +45,23 @@ export default {
           webhookSecretConfigured: Boolean(env.BMC_WEBHOOK_SECRET),
           timestamp: new Date().toISOString()
         });
-      } 
+      }
 
-      // ------------------------------------------------------------
-      // BUY ME A COFFEE WEBHOOK
-      // ------------------------------------------------------------
+      // ----------------------------------------------------------
+      // PUBLIC SUPPORTER API
+      // ----------------------------------------------------------
+
+      if (
+        request.method === "GET" &&
+        url.pathname === "/api/supporters"
+      ) {
+        return handleSupporters(request, env);
+      }
+
+      // ----------------------------------------------------------
+      // BMC WEBHOOK
+      // ----------------------------------------------------------
+
       if (
         request.method === "POST" &&
         url.pathname === "/webhooks/bmc"
@@ -61,12 +85,13 @@ export default {
 };
 
 
-/**
- * Receive and authenticate a Buy Me a Coffee webhook.
- */
+// ================================================================
+// BMC WEBHOOK
+// ================================================================
+
 async function handleBmcWebhook(request, env) {
   if (!env.BMC_WEBHOOK_SECRET) {
-    console.error("BMC_WEBHOOK_SECRET is not configured.");
+    console.error("BMC_WEBHOOK_SECRET missing.");
 
     return jsonResponse(
       { error: "Webhook configuration error" },
@@ -75,7 +100,7 @@ async function handleBmcWebhook(request, env) {
   }
 
   if (!env.DB) {
-    console.error("D1 binding DB is not configured.");
+    console.error("D1 binding DB missing.");
 
     return jsonResponse(
       { error: "Database configuration error" },
@@ -83,9 +108,10 @@ async function handleBmcWebhook(request, env) {
     );
   }
 
-  const signature = request.headers.get("x-signature-sha256");
+  const suppliedSignature =
+    request.headers.get("x-signature-sha256");
 
-  if (!signature) {
+  if (!suppliedSignature) {
     return jsonResponse(
       { error: "Missing webhook signature" },
       401
@@ -94,20 +120,18 @@ async function handleBmcWebhook(request, env) {
 
   /*
    * IMPORTANT:
-   * BMC requires the HMAC to be calculated from the exact RAW body.
-   *
-   * Do not call request.json() before verification.
+   * Verify against the exact raw request body BEFORE JSON parsing.
    */
   const rawBody = await request.text();
 
-  const signatureValid = await verifyHmacSha256(
+  const validSignature = await verifyHmacSha256(
     rawBody,
     env.BMC_WEBHOOK_SECRET,
-    signature
+    suppliedSignature
   );
 
-  if (!signatureValid) {
-    console.warn("Rejected webhook with invalid signature.");
+  if (!validSignature) {
+    console.warn("Invalid BMC webhook signature.");
 
     return jsonResponse(
       { error: "Invalid webhook signature" },
@@ -129,7 +153,9 @@ async function handleBmcWebhook(request, env) {
   if (
     !event ||
     event.event_id === undefined ||
-    typeof event.type !== "string"
+    typeof event.type !== "string" ||
+    !event.data ||
+    typeof event.data !== "object"
   ) {
     return jsonResponse(
       { error: "Invalid webhook payload" },
@@ -138,53 +164,281 @@ async function handleBmcWebhook(request, env) {
   }
 
   if (!BMC_EVENTS.has(event.type)) {
-    /*
-     * Return 200 rather than causing BMC to retry an event
-     * that this application intentionally doesn't process.
-     */
     return jsonResponse({
       ok: true,
       ignored: true
     });
   }
 
-  /*
-   * TEMPORARY SAFE CAPTURE:
-   *
-   * We have authenticated this event as genuinely coming from BMC.
-   * For the first test we log the event-specific `data` object.
-   *
-   * We are NOT yet writing donor fields to D1 because we want to
-   * map BMC's actual current payload rather than guessing field names.
-   *
-   * Do not log this permanently once integration is complete.
-   */
-  console.log(
-    "Verified BMC webhook:",
-    JSON.stringify({
-      event_id: event.event_id,
-      type: event.type,
-      live_mode: event.live_mode,
-      created: event.created,
-      attempt: event.attempt,
-      data: event.data
-    })
-  );
+  if (event.type === "donation.created") {
+    return handleDonationCreated(event, env);
+  }
+
+  if (event.type === "donation.refunded") {
+    return handleDonationRefunded(event, env);
+  }
 
   return jsonResponse({
     ok: true,
-    received: true,
-    eventId: String(event.event_id),
-    eventType: event.type,
-    liveMode: event.live_mode === true
+    ignored: true
   });
 }
 
 
-/**
- * Verify BMC's HMAC-SHA256 signature.
- */
-async function verifyHmacSha256(rawBody, secret, suppliedSignature) {
+// ================================================================
+// DONATION CREATED
+// ================================================================
+
+async function handleDonationCreated(event, env) {
+  const data = event.data;
+
+  /*
+   * Test events are useful for integration testing but should NEVER
+   * become real supporters on the production website.
+   */
+  if (event.live_mode !== true) {
+    return jsonResponse({
+      ok: true,
+      received: true,
+      test: true,
+      stored: false,
+      eventId: String(event.event_id),
+      eventType: event.type
+    });
+  }
+
+  if (data.status !== "succeeded") {
+    return jsonResponse({
+      ok: true,
+      ignored: true,
+      reason: "Payment not succeeded"
+    });
+  }
+
+  const eventId = String(event.event_id);
+
+  const supporterName = cleanText(
+    data.supporter_name || "Anonymous legend",
+    80
+  );
+
+  /*
+   * BMC sends note_hidden as a STRING in the observed payload.
+   * Treat both boolean true and string "true" as hidden.
+   */
+  const noteHidden =
+    data.note_hidden === true ||
+    String(data.note_hidden).toLowerCase() === "true";
+
+  const supporterMessage = noteHidden
+    ? null
+    : cleanText(data.support_note || "", 500);
+
+  const amount = Number(data.amount);
+
+  const amountMinor = Number.isFinite(amount)
+    ? Math.round(amount * 100)
+    : 0;
+
+  const currency = normaliseCurrency(data.currency);
+
+  const coffeeCount = Number(data.coffee_count);
+
+  const beers =
+    Number.isInteger(coffeeCount) && coffeeCount > 0
+      ? Math.min(coffeeCount, 100)
+      : 1;
+
+  const createdAt = unixToIso(
+    data.created_at || event.created
+  );
+
+  if (amountMinor <= 0) {
+    return jsonResponse(
+      { error: "Invalid donation amount" },
+      400
+    );
+  }
+
+  try {
+    await env.DB
+      .prepare(`
+        INSERT INTO donations (
+          provider,
+          provider_event_id,
+          supporter_name,
+          message,
+          amount_minor,
+          currency,
+          beers,
+          status,
+          approved,
+          created_at
+        )
+        VALUES (
+          'buymeacoffee',
+          ?1,
+          ?2,
+          ?3,
+          ?4,
+          ?5,
+          ?6,
+          'active',
+          1,
+          ?7
+        )
+      `)
+      .bind(
+        eventId,
+        supporterName,
+        supporterMessage,
+        amountMinor,
+        currency,
+        beers,
+        createdAt
+      )
+      .run();
+
+  } catch (error) {
+    /*
+     * BMC can retry webhook deliveries.
+     *
+     * provider_event_id is UNIQUE, so a duplicate event cannot
+     * create duplicate donations.
+     */
+    if (isUniqueConstraintError(error)) {
+      return jsonResponse({
+        ok: true,
+        received: true,
+        duplicate: true,
+        eventId
+      });
+    }
+
+    throw error;
+  }
+
+  return jsonResponse({
+    ok: true,
+    received: true,
+    stored: true,
+    eventId
+  });
+}
+
+
+// ================================================================
+// DONATION REFUNDED
+// ================================================================
+
+async function handleDonationRefunded(event, env) {
+  const data = event.data;
+
+  if (event.live_mode !== true) {
+    return jsonResponse({
+      ok: true,
+      received: true,
+      test: true,
+      stored: false,
+      eventId: String(event.event_id),
+      eventType: event.type
+    });
+  }
+
+  /*
+   * We need a stable relationship back to the original donation.
+   *
+   * BMC refund payload structure can differ from donation.created.
+   * Until we've observed a real/test refund payload, try the
+   * identifiers BMC has already exposed without inventing data.
+   */
+  const possibleOriginalEventId =
+    data.original_event_id ??
+    data.event_id ??
+    null;
+
+  if (possibleOriginalEventId !== null) {
+    await env.DB
+      .prepare(`
+        UPDATE donations
+        SET status = 'refunded'
+        WHERE provider = 'buymeacoffee'
+          AND provider_event_id = ?1
+      `)
+      .bind(String(possibleOriginalEventId))
+      .run();
+  }
+
+  return jsonResponse({
+    ok: true,
+    received: true,
+    refundAcknowledged: true
+  });
+}
+
+
+// ================================================================
+// PUBLIC SUPPORTER API
+// ================================================================
+
+async function handleSupporters(request, env) {
+  if (!env.DB) {
+    return jsonResponse(
+      { error: "Database unavailable" },
+      500
+    );
+  }
+
+  const result = await env.DB
+    .prepare(`
+      SELECT
+        supporter_name,
+        message,
+        beers,
+        amount_minor,
+        currency,
+        created_at
+      FROM donations
+      WHERE status = 'active'
+        AND approved = 1
+      ORDER BY created_at DESC
+      LIMIT 100
+    `)
+    .all();
+
+  const supporters = (result.results || []).map(row => ({
+    name: row.supporter_name,
+    beers: row.beers,
+    message: row.message || "",
+    amount: row.amount_minor / 100,
+    currency: row.currency,
+    createdAt: row.created_at
+  }));
+
+  return corsJsonResponse(
+    request,
+    {
+      supporters,
+      totalBeers: supporters.reduce(
+        (total, supporter) =>
+          total + Number(supporter.beers || 0),
+        0
+      )
+    },
+    200
+  );
+}
+
+
+// ================================================================
+// HMAC VERIFICATION
+// ================================================================
+
+async function verifyHmacSha256(
+  rawBody,
+  secret,
+  suppliedSignature
+) {
   const encoder = new TextEncoder();
 
   const key = await crypto.subtle.importKey(
@@ -204,19 +458,19 @@ async function verifyHmacSha256(rawBody, secret, suppliedSignature) {
     encoder.encode(rawBody)
   );
 
-  const expectedSignature = bufferToHex(signatureBuffer);
+  const expectedSignature =
+    bufferToHex(signatureBuffer).toLowerCase();
+
+  const receivedSignature =
+    suppliedSignature.trim().toLowerCase();
 
   return timingSafeEqual(
-    expectedSignature.toLowerCase(),
-    suppliedSignature.trim().toLowerCase()
+    expectedSignature,
+    receivedSignature
   );
 }
 
 
-/**
- * Constant-time-ish comparison to avoid ordinary string equality
- * for authentication material.
- */
 function timingSafeEqual(a, b) {
   if (a.length !== b.length) {
     return false;
@@ -225,7 +479,8 @@ function timingSafeEqual(a, b) {
   let difference = 0;
 
   for (let i = 0; i < a.length; i++) {
-    difference |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    difference |=
+      a.charCodeAt(i) ^ b.charCodeAt(i);
   }
 
   return difference === 0;
@@ -234,10 +489,71 @@ function timingSafeEqual(a, b) {
 
 function bufferToHex(buffer) {
   return [...new Uint8Array(buffer)]
-    .map(byte => byte.toString(16).padStart(2, "0"))
+    .map(byte =>
+      byte.toString(16).padStart(2, "0")
+    )
     .join("");
 }
 
+
+// ================================================================
+// INPUT NORMALISATION
+// ================================================================
+
+function cleanText(value, maxLength) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value
+    .replace(/[\u0000-\u001F\u007F]/g, "")
+    .trim()
+    .slice(0, maxLength);
+}
+
+
+function normaliseCurrency(value) {
+  if (typeof value !== "string") {
+    return "GBP";
+  }
+
+  const currency = value
+    .trim()
+    .toUpperCase();
+
+  return /^[A-Z]{3}$/.test(currency)
+    ? currency
+    : "GBP";
+}
+
+
+function unixToIso(value) {
+  const timestamp = Number(value);
+
+  if (!Number.isFinite(timestamp)) {
+    return new Date().toISOString();
+  }
+
+  return new Date(timestamp * 1000).toISOString();
+}
+
+
+function isUniqueConstraintError(error) {
+  const message =
+    error instanceof Error
+      ? error.message
+      : String(error);
+
+  return (
+    message.includes("UNIQUE constraint failed") ||
+    message.includes("SQLITE_CONSTRAINT")
+  );
+}
+
+
+// ================================================================
+// RESPONSES / CORS
+// ================================================================
 
 function jsonResponse(body, status = 200) {
   return new Response(
@@ -245,10 +561,50 @@ function jsonResponse(body, status = 200) {
     {
       status,
       headers: {
-        "Content-Type": "application/json; charset=UTF-8",
-        "Cache-Control": "no-store",
-        "X-Content-Type-Options": "nosniff"
+        "Content-Type":
+          "application/json; charset=UTF-8",
+
+        "Cache-Control":
+          "no-store",
+
+        "X-Content-Type-Options":
+          "nosniff"
       }
+    }
+  );
+}
+
+
+function corsJsonResponse(
+  request,
+  body,
+  status = 200
+) {
+  const origin = request.headers.get("Origin");
+
+  const headers = {
+    "Content-Type":
+      "application/json; charset=UTF-8",
+
+    "Cache-Control":
+      "public, max-age=60",
+
+    "X-Content-Type-Options":
+      "nosniff"
+  };
+
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    headers["Access-Control-Allow-Origin"] =
+      origin;
+
+    headers["Vary"] = "Origin";
+  }
+
+  return new Response(
+    JSON.stringify(body),
+    {
+      status,
+      headers
     }
   );
 }
