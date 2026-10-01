@@ -1,80 +1,123 @@
 /**
+ * ================================================================
  * KirkDrinks.beer
- * Frontend application
+ * app.js
+ * ================================================================
  *
  * Handles:
  * - Beer reviews
+ * - Review statistics
  * - Venue reviews
- * - Gallery
- * - Live supporter wall
- * - Static supporter fallback
  * - Pint Map
- * - Navigation
+ * - Gallery
+ * - Live Buy Me a Coffee supporters
+ * - Static supporter fallback
+ * - Mobile navigation
+ *
+ * IMPORTANT:
+ * Reviews do NOT require:
+ * - coordinates
+ * - brewery
+ * - venue scores
+ * - venue review
+ *
+ * Those fields are optional.
+ * ================================================================
  */
 
-const SUPPORTERS_API =
-  "https://kirkdrinks-beer.kirkjlemon.workers.dev/api/supporters";
+import maplibregl from
+  "https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.mjs";
 
-const SUPPORTERS_FALLBACK =
-  "data/supporters.json";
 
-const REVIEWS_URL =
-  "data/reviews.json";
+// ================================================================
+// CONFIG
+// ================================================================
 
-const GALLERY_URL =
-  "data/gallery.json";
+const CONFIG = {
+  reviewsUrl: "data/reviews.json",
+
+  galleryUrl: "data/gallery.json",
+
+  supportersFallbackUrl:
+    "data/supporters.json",
+
+  supportersApiUrl:
+    "https://kirkdrinks-beer.kirkjlemon.workers.dev/api/supporters",
+
+  mapStyleUrl:
+    "https://tiles.openfreemap.org/styles/liberty"
+};
 
 
 // ================================================================
 // DOM
 // ================================================================
 
-const reviewGrid =
-  document.querySelector("#reviewGrid");
+const DOM = {
+  menuToggle:
+    document.querySelector("#menu-toggle"),
 
-const galleryGrid =
-  document.querySelector("#galleryGrid");
+  siteNav:
+    document.querySelector("#site-nav"),
 
-const supporterGrid =
-  document.querySelector("#supporterGrid");
+  reviewCount:
+    document.querySelector("#review-count"),
 
-const totalBeersFunded =
-  document.querySelector("#totalBeersFunded");
+  locationCount:
+    document.querySelector("#location-count"),
 
-const totalReviews =
-  document.querySelector("#totalReviews");
+  averageScore:
+    document.querySelector("#average-score"),
 
-const averageScore =
-  document.querySelector("#averageScore");
+  supporterCount:
+    document.querySelector("#supporter-count"),
 
-const placesPinned =
-  document.querySelector("#placesPinned");
+  reviewsGrid:
+    document.querySelector("#reviews-grid"),
 
-const mapStatus =
-  document.querySelector("#mapStatus");
+  pintMap:
+    document.querySelector("#pint-map"),
 
-const menuToggle =
-  document.querySelector("#menuToggle");
+  mapEmpty:
+    document.querySelector("#map-empty"),
 
-const siteNav =
-  document.querySelector("#siteNav");
+  mapStatus:
+    document.querySelector("#map-status"),
+
+  venuesGrid:
+    document.querySelector("#venues-grid"),
+
+  galleryGrid:
+    document.querySelector("#gallery-grid"),
+
+  fundedCount:
+    document.querySelector("#funded-count"),
+
+  beerMeterFill:
+    document.querySelector("#beer-meter-fill"),
+
+  supportersGrid:
+    document.querySelector("#supporters-grid"),
+
+  year:
+    document.querySelector("#year")
+};
 
 
 // ================================================================
 // STATE
 // ================================================================
 
-let reviews = [];
-
-let galleryItems = [];
-
-let supporters = [];
-
-let pintMap = null;
+const state = {
+  reviews: [],
+  gallery: [],
+  supporters: [],
+  map: null
+};
 
 
 // ================================================================
-// INITIALISE
+// INITIALISATION
 // ================================================================
 
 document.addEventListener(
@@ -86,10 +129,20 @@ document.addEventListener(
 async function initialiseSite() {
   initialiseNavigation();
 
-  await Promise.all([
-    loadReviews(),
-    loadGallery(),
-    loadSupporters()
+  initialiseFooter();
+
+  /*
+   * These are deliberately independent.
+   *
+   * If BMC dies, reviews still work.
+   * If gallery.json dies, reviews still work.
+   * If the map dies, reviews still work.
+   */
+
+  await Promise.allSettled([
+    initialiseReviews(),
+    initialiseGallery(),
+    initialiseSupporters()
   ]);
 }
 
@@ -98,88 +151,84 @@ async function initialiseSite() {
 // REVIEWS
 // ================================================================
 
-async function loadReviews() {
+async function initialiseReviews() {
   try {
-    const response =
-      await fetch(REVIEWS_URL, {
-        cache: "no-store"
-      });
-
-
-    if (!response.ok) {
-      throw new Error(
-        `Reviews request failed: ${response.status}`
-      );
-    }
-
-
     const data =
-      await response.json();
+      await fetchJson(
+        CONFIG.reviewsUrl
+      );
 
 
     if (!Array.isArray(data)) {
       throw new Error(
-        "Reviews JSON must contain an array."
+        "reviews.json must contain a JSON array."
       );
     }
 
 
-    reviews = data;
+    state.reviews =
+      data.filter(
+        review =>
+          review &&
+          typeof review === "object"
+      );
 
 
     renderReviews();
 
-    renderReviewStats();
+    renderReviewStatistics();
+
+    renderVenues();
 
     initialisePintMap();
 
   } catch (error) {
     console.error(
-      "Unable to load reviews:",
+      "[KirkDrinks] Reviews failed:",
       error
     );
 
 
-    if (reviewGrid) {
-      reviewGrid.innerHTML = `
-        <p class="empty-state">
-          Couldn't load the beer reviews.
-        </p>
-      `;
-    }
+    renderReviewError();
 
+    renderReviewStatistics();
 
-    if (mapStatus) {
-      mapStatus.textContent =
-        "Couldn't load locations.";
-    }
+    renderVenues();
+
+    showEmptyMap(
+      "The beer reviews couldn't be loaded, so the map is unavailable."
+    );
   }
 }
 
 
 // ================================================================
-// RENDER REVIEWS
+// REVIEW RENDERER
 // ================================================================
 
 function renderReviews() {
-  if (!reviewGrid) {
+  if (!DOM.reviewsGrid) {
+    console.error(
+      "[KirkDrinks] #reviews-grid not found."
+    );
+
     return;
   }
 
 
-  if (reviews.length === 0) {
-    reviewGrid.innerHTML = `
-      <p class="empty-state">
+  if (state.reviews.length === 0) {
+    DOM.reviewsGrid.innerHTML = `
+      <div class="empty-state">
         No beers reviewed yet.
-      </p>
+      </div>
     `;
 
     return;
   }
 
 
-  reviewGrid.innerHTML =
-    reviews
+  DOM.reviewsGrid.innerHTML =
+    state.reviews
       .map(
         (review, index) =>
           createReviewCard(
@@ -197,13 +246,21 @@ function createReviewCard(
 ) {
   const name =
     escapeHtml(
-      review.name || "Unknown beer"
+      review.name ||
+      "Mystery pint"
+    );
+
+
+  const brewery =
+    escapeHtml(
+      review.brewery || ""
     );
 
 
   const style =
     escapeHtml(
-      review.style || "Beer"
+      review.style ||
+      "Beer"
     );
 
 
@@ -226,7 +283,7 @@ function createReviewCard(
 
 
   const image =
-    safeImagePath(
+    safeAssetPath(
       review.image
     );
 
@@ -234,12 +291,12 @@ function createReviewCard(
   const alt =
     escapeHtml(
       review.alt ||
-      `Photo of ${review.name || "beer"}`
+      `${review.name || "Beer"} review`
     );
 
 
   const score =
-    normaliseScore(
+    formatScore(
       review.score
     );
 
@@ -248,50 +305,71 @@ function createReviewCard(
     review.buyAgain === true;
 
 
-  const venue =
-    review.venue &&
-    typeof review.venue === "object"
-      ? review.venue
-      : null;
+  const locationParts =
+    [
+      location,
+      country
+    ].filter(Boolean);
 
 
   const locationText =
-    [location, country]
-      .filter(Boolean)
-      .join(", ");
+    locationParts.join(", ");
+
+
+  const venue =
+    getVenue(review);
+
+
+  const price =
+    getReviewPrice(review);
 
 
   return `
     <article
-      class="review-card"
       id="review-${index}"
+      class="review-card"
     >
 
-      <div class="review-card__image-wrap">
+      <div class="review-image-wrap">
 
-        <img
-          class="review-card__image"
-          src="${image}"
-          alt="${alt}"
-          loading="lazy"
-          decoding="async"
-        >
-
-        <div
-          class="review-card__score"
-          aria-label="Score ${score} out of 10"
-        >
-          ${score}
-        </div>
+        ${
+          image
+            ? `
+              <img
+                class="review-image"
+                src="${image}"
+                alt="${alt}"
+                loading="lazy"
+                decoding="async"
+              >
+            `
+            : `
+              <div
+                class="review-image review-image-placeholder"
+                aria-hidden="true"
+              >
+                🍺
+              </div>
+            `
+        }
 
       </div>
 
 
-      <div class="review-card__content">
+      <div class="review-content">
 
-        <div class="review-card__eyebrow">
-          ${style}
+        <div class="review-meta">
+
+          <span>
+            ${style}
+          </span>
+
+          <span>
+            ${score}/10
+          </span>
+
         </div>
+
 
         <h3>
           ${name}
@@ -299,9 +377,20 @@ function createReviewCard(
 
 
         ${
+          brewery
+            ? `
+              <p class="review-brewery">
+                ${brewery}
+              </p>
+            `
+            : ""
+        }
+
+
+        ${
           locationText
             ? `
-              <p class="review-card__location">
+              <p class="review-location">
                 📍 ${locationText}
               </p>
             `
@@ -309,29 +398,59 @@ function createReviewCard(
         }
 
 
-        <p class="review-card__review">
-          ${reviewText}
-        </p>
+        ${
+          price
+            ? `
+              <p class="review-price">
+                🍺 ${price}
+              </p>
+            `
+            : ""
+        }
 
 
-        <div class="review-card__verdict">
+        ${
+          reviewText
+            ? `
+              <p class="review-copy">
+                ${reviewText}
+              </p>
+            `
+            : ""
+        }
 
-          <span>
+
+        <div class="score-row">
+
+          <span class="score-badge">
+            ${score}/10
+          </span>
+
+          <span class="buy-again">
+
             ${
               buyAgain
-                ? "🍺 Would drink again"
-                : "🚫 Wouldn't buy again"
+                ? "✓ I'd have another"
+                : "✕ One and done"
             }
+
           </span>
 
         </div>
 
 
         ${
-          venue
-            ? createVenueReview(
-                venue
-              )
+          venue &&
+          venue.name
+            ? `
+              <a
+                class="review-venue-link"
+                href="#${createVenueId(venue)}"
+              >
+                View ${escapeHtml(venue.name)}
+                ↓
+              </a>
+            `
             : ""
         }
 
@@ -343,100 +462,361 @@ function createReviewCard(
 
 
 // ================================================================
-// VENUE REVIEWS
+// REVIEW ERROR
 // ================================================================
 
-function createVenueReview(
-  venue
+function renderReviewError() {
+  if (!DOM.reviewsGrid) {
+    return;
+  }
+
+
+  DOM.reviewsGrid.innerHTML = `
+    <div class="empty-state">
+
+      <strong>
+        Couldn't load the beer reviews.
+      </strong>
+
+      <p>
+        Check data/reviews.json and refresh the page.
+      </p>
+
+    </div>
+  `;
+}
+
+
+// ================================================================
+// REVIEW STATISTICS
+// ================================================================
+
+function renderReviewStatistics() {
+  const reviews =
+    state.reviews;
+
+
+  if (DOM.reviewCount) {
+    DOM.reviewCount.textContent =
+      String(
+        reviews.length
+      );
+  }
+
+
+  const scores =
+    reviews
+      .map(
+        review =>
+          Number(review.score)
+      )
+      .filter(
+        score =>
+          Number.isFinite(score)
+      );
+
+
+  if (DOM.averageScore) {
+    if (scores.length === 0) {
+      DOM.averageScore.textContent =
+        "0.0";
+    } else {
+      const total =
+        scores.reduce(
+          (sum, score) =>
+            sum + score,
+          0
+        );
+
+
+      DOM.averageScore.textContent =
+        (
+          total /
+          scores.length
+        ).toFixed(1);
+    }
+  }
+}
+
+
+// ================================================================
+// VENUES
+// ================================================================
+
+function renderVenues() {
+  if (!DOM.venuesGrid) {
+    return;
+  }
+
+
+  const venues =
+    buildVenueCollection(
+      state.reviews
+    );
+
+
+  /*
+   * We only show this empty message if absolutely
+   * no venue information exists.
+   *
+   * Historical reviews with venue names still count,
+   * even if detailed venue scoring wasn't collected.
+   */
+
+  if (venues.length === 0) {
+    DOM.venuesGrid.innerHTML = `
+      <div class="empty-state">
+        Venue reviews will appear here as they're added.
+      </div>
+    `;
+
+    return;
+  }
+
+
+  DOM.venuesGrid.innerHTML =
+    venues
+      .map(
+        venue =>
+          createVenueCard(venue)
+      )
+      .join("");
+}
+
+
+// ================================================================
+// BUILD VENUE COLLECTION
+// ================================================================
+
+function buildVenueCollection(
+  reviews
 ) {
+  const venues =
+    new Map();
+
+
+  reviews.forEach(
+    (review, reviewIndex) => {
+      const venue =
+        getVenue(review);
+
+
+      if (
+        !venue ||
+        !venue.name
+      ) {
+        return;
+      }
+
+
+      const key =
+        createVenueKey(
+          venue,
+          review
+        );
+
+
+      if (!venues.has(key)) {
+        venues.set(
+          key,
+          {
+            name:
+              venue.name,
+
+            location:
+              venue.location ||
+              review.location ||
+              "",
+
+            country:
+              review.country ||
+              "",
+
+            coordinates:
+              getCoordinates(
+                venue
+              ),
+
+            reviews: [],
+
+            venueData: []
+          }
+        );
+      }
+
+
+      const entry =
+        venues.get(key);
+
+
+      entry.reviews.push({
+        review,
+        reviewIndex
+      });
+
+
+      entry.venueData.push(
+        venue
+      );
+    }
+  );
+
+
+  return Array.from(
+    venues.values()
+  );
+}
+
+
+// ================================================================
+// VENUE CARD
+// ================================================================
+
+function createVenueCard(
+  venueGroup
+) {
+  const representative =
+    getBestVenueData(
+      venueGroup.venueData
+    );
+
+
   const name =
     escapeHtml(
-      venue.name ||
-      "Unknown venue"
+      venueGroup.name
     );
 
 
   const location =
     escapeHtml(
-      venue.location || ""
+      venueGroup.location
     );
 
 
-  const review =
+  const country =
     escapeHtml(
-      venue.review || ""
+      venueGroup.country
     );
+
+
+  const locationText =
+    [
+      location,
+      country
+    ]
+      .filter(Boolean)
+      .join(", ");
 
 
   const priceScore =
-    normaliseScore(
-      venue.price
+    optionalScore(
+      representative.price
     );
 
 
   const pourScore =
-    normaliseScore(
-      venue.pour
+    optionalScore(
+      representative.pour
     );
 
 
   const venueScore =
-    normaliseScore(
-      venue.venue
+    optionalScore(
+      representative.venue
     );
 
 
   const overall =
     calculateVenueOverall(
-      venue
+      representative
     );
 
 
-  const pricePaid =
-    formatPrice(
-      venue.pricePaid,
-      venue.currency
+  const venueReview =
+    escapeHtml(
+      representative.review ||
+      ""
     );
 
 
   const wouldReturn =
-    venue.wouldReturn === true;
+    representative.wouldReturn;
+
+
+  const pricePaid =
+    getVenuePrice(
+      representative
+    );
+
+
+  const beerCount =
+    venueGroup.reviews.length;
+
+
+  const beerNames =
+    venueGroup.reviews
+      .map(
+        item =>
+          escapeHtml(
+            item.review.name ||
+            "Unknown beer"
+          )
+      );
 
 
   return `
-    <section class="venue-review">
+    <article
+      id="${createVenueId(representative)}"
+      class="venue-card"
+    >
 
-      <div class="venue-review__header">
+      <div class="venue-card-head">
 
         <div>
 
-          <span class="venue-review__label">
-            VENUE
-          </span>
-
-          <h4>
+          <h3>
             ${name}
-          </h4>
+          </h3>
 
           ${
-            location
+            locationText
               ? `
-                <p>
-                  ${location}
-                </p>
+                <div class="venue-location">
+                  📍 ${locationText}
+                </div>
               `
               : ""
           }
 
+          <div class="venue-location">
+            🍺 ${beerCount}
+            ${
+              beerCount === 1
+                ? "beer reviewed"
+                : "beers reviewed"
+            }
+          </div>
+
         </div>
 
 
-        <div
-          class="venue-review__overall"
-          aria-label="Venue score ${overall} out of 10"
-        >
-          ${overall}
-        </div>
+        ${
+          overall !== null
+            ? `
+              <div class="venue-overall">
+
+                <strong>
+                  ${overall}
+                </strong>
+
+                <span>
+                  overall
+                </span>
+
+              </div>
+            `
+            : ""
+        }
 
       </div>
 
@@ -444,85 +824,252 @@ function createVenueReview(
       ${
         pricePaid
           ? `
-            <p class="venue-review__price-paid">
-              Pint price:
-              <strong>
-                ${pricePaid}
-              </strong>
-            </p>
+            <div class="venue-review">
+
+              <span class="venue-price-paid">
+                Pint paid: ${pricePaid}
+              </span>
+
+            </div>
           `
           : ""
       }
-
-
-      <div class="venue-review__scores">
-
-        <div>
-          <span>Price</span>
-          <strong>
-            ${priceScore}
-          </strong>
-        </div>
-
-        <div>
-          <span>Pour</span>
-          <strong>
-            ${pourScore}
-          </strong>
-        </div>
-
-        <div>
-          <span>Venue</span>
-          <strong>
-            ${venueScore}
-          </strong>
-        </div>
-
-      </div>
 
 
       ${
-        review
+        (
+          priceScore !== null ||
+          pourScore !== null ||
+          venueScore !== null
+        )
           ? `
-            <p class="venue-review__text">
-              ${review}
-            </p>
+            <div class="venue-scores">
+
+              ${createVenueScore(
+                "Price",
+                priceScore
+              )}
+
+              ${createVenueScore(
+                "Pour",
+                pourScore
+              )}
+
+              ${createVenueScore(
+                "Venue",
+                venueScore
+              )}
+
+            </div>
           `
           : ""
       }
 
 
-      <div class="venue-review__return">
+      <div class="venue-review">
 
         ${
-          wouldReturn
-            ? "🍻 Would drink here again"
-            : "🚪 Wouldn't rush back"
+          venueReview
+            ? `
+              <p>
+                ${venueReview}
+              </p>
+            `
+            : `
+              <p>
+                Beers tried here:
+                ${beerNames.join(", ")}.
+              </p>
+            `
+        }
+
+
+        ${
+          typeof wouldReturn ===
+          "boolean"
+            ? `
+              <span class="venue-verdict">
+
+                ${
+                  wouldReturn
+                    ? "✓ Would return"
+                    : "✕ Wouldn't rush back"
+                }
+
+              </span>
+            `
+            : ""
         }
 
       </div>
 
-    </section>
+    </article>
   `;
+}
+
+
+function createVenueScore(
+  label,
+  score
+) {
+  if (score === null) {
+    return "";
+  }
+
+
+  return `
+    <div class="venue-score">
+
+      <span>
+        ${escapeHtml(label)}
+      </span>
+
+      <strong>
+        ${score}/10
+      </strong>
+
+    </div>
+  `;
+}
+
+
+// ================================================================
+// VENUE HELPERS
+// ================================================================
+
+function getVenue(
+  review
+) {
+  if (
+    review.venue &&
+    typeof review.venue === "object"
+  ) {
+    return review.venue;
+  }
+
+
+  /*
+   * Backward compatibility.
+   *
+   * If an old review hasn't yet been migrated to the
+   * nested venue format, we don't crash.
+   */
+
+  return null;
+}
+
+
+function getBestVenueData(
+  venueData
+) {
+  if (
+    !Array.isArray(venueData) ||
+    venueData.length === 0
+  ) {
+    return {};
+  }
+
+
+  /*
+   * Prefer the entry containing the most complete
+   * venue information.
+   */
+
+  return [...venueData]
+    .sort(
+      (a, b) =>
+        venueCompletenessScore(b) -
+        venueCompletenessScore(a)
+    )[0];
+}
+
+
+function venueCompletenessScore(
+  venue
+) {
+  let score = 0;
+
+
+  if (venue.name) {
+    score += 1;
+  }
+
+
+  if (venue.location) {
+    score += 1;
+  }
+
+
+  if (
+    optionalScore(
+      venue.price
+    ) !== null
+  ) {
+    score += 1;
+  }
+
+
+  if (
+    optionalScore(
+      venue.pour
+    ) !== null
+  ) {
+    score += 1;
+  }
+
+
+  if (
+    optionalScore(
+      venue.venue
+    ) !== null
+  ) {
+    score += 1;
+  }
+
+
+  if (venue.review) {
+    score += 1;
+  }
+
+
+  if (
+    getCoordinates(
+      venue
+    )
+  ) {
+    score += 1;
+  }
+
+
+  return score;
 }
 
 
 function calculateVenueOverall(
   venue
 ) {
-  const scores = [
-    Number(venue.price),
-    Number(venue.pour),
-    Number(venue.venue)
-  ]
-    .filter(
-      score =>
-        Number.isFinite(score)
-    );
+  const scores =
+    [
+      optionalScore(
+        venue.price
+      ),
+
+      optionalScore(
+        venue.pour
+      ),
+
+      optionalScore(
+        venue.venue
+      )
+    ]
+      .filter(
+        value =>
+          value !== null
+      );
 
 
   if (scores.length === 0) {
-    return "—";
+    return null;
   }
 
 
@@ -542,84 +1089,14 @@ function calculateVenueOverall(
 
 
 // ================================================================
-// REVIEW STATS
-// ================================================================
-
-function renderReviewStats() {
-  if (totalReviews) {
-    totalReviews.textContent =
-      String(
-        reviews.length
-      );
-  }
-
-
-  if (averageScore) {
-    const validScores =
-      reviews
-        .map(
-          review =>
-            Number(review.score)
-        )
-        .filter(
-          score =>
-            Number.isFinite(score)
-        );
-
-
-    if (
-      validScores.length === 0
-    ) {
-      averageScore.textContent =
-        "—";
-    } else {
-      const total =
-        validScores.reduce(
-          (sum, score) =>
-            sum + score,
-          0
-        );
-
-
-      averageScore.textContent =
-        (
-          total /
-          validScores.length
-        ).toFixed(1);
-    }
-  }
-}
-
-
-// ================================================================
 // PINT MAP
 // ================================================================
 
 function initialisePintMap() {
-  const mapElement =
-    document.querySelector(
-      "#pintMap"
-    );
-
-
-  if (!mapElement) {
-    return;
-  }
-
-
-  if (
-    typeof maplibregl ===
-    "undefined"
-  ) {
+  if (!DOM.pintMap) {
     console.error(
-      "MapLibre failed to load."
+      "[KirkDrinks] #pint-map not found."
     );
-
-
-    if (mapStatus) {
-      mapStatus.textContent =
-        "Map unavailable.";
-    }
 
     return;
   }
@@ -627,113 +1104,130 @@ function initialisePintMap() {
 
   const locations =
     buildMapLocations(
-      reviews
+      state.reviews
     );
 
 
-  if (placesPinned) {
-    placesPinned.textContent =
+  if (DOM.locationCount) {
+    DOM.locationCount.textContent =
       String(
         locations.length
       );
   }
 
 
-  if (
-    locations.length === 0
-  ) {
-    if (mapStatus) {
-      mapStatus.textContent =
-        "No places pinned yet. The drinking map begins with the next adventure.";
-    }
+  /*
+   * This is EXPECTED while coordinates are null.
+   *
+   * Reviews still render normally.
+   */
 
-
-    mapElement.classList.add(
-      "pint-map--empty"
+  if (locations.length === 0) {
+    showEmptyMap(
+      "No places pinned yet — beer reviews are live, and map pins will appear as coordinates are added."
     );
 
     return;
   }
 
 
-  mapElement.classList.remove(
-    "pint-map--empty"
-  );
+  hideEmptyMap();
 
 
-  pintMap =
-    new maplibregl.Map({
-      container: "pintMap",
+  try {
+    state.map =
+      new maplibregl.Map({
+        container:
+          DOM.pintMap,
 
-      style:
-        "https://tiles.openfreemap.org/styles/liberty",
+        style:
+          CONFIG.mapStyleUrl,
 
-      center: [
-        locations[0].lng,
-        locations[0].lat
-      ],
+        center: [
+          locations[0].lng,
+          locations[0].lat
+        ],
 
-      zoom: 3,
+        zoom: 4,
 
-      attributionControl: true
-    });
-
-
-  pintMap.addControl(
-    new maplibregl.NavigationControl({
-      showCompass: false
-    }),
-    "top-right"
-  );
+        attributionControl:
+          true
+      });
 
 
-  const bounds =
-    new maplibregl.LngLatBounds();
+    state.map.addControl(
+      new maplibregl.NavigationControl({
+        showCompass: false
+      }),
+      "top-right"
+    );
 
 
-  locations.forEach(
-    location => {
-      addMapMarker(
-        location
-      );
+    const bounds =
+      new maplibregl.LngLatBounds();
 
 
-      bounds.extend([
-        location.lng,
-        location.lat
-      ]);
-    }
-  );
+    locations.forEach(
+      location => {
+        addPintMarker(
+          location
+        );
 
 
-  if (
-    locations.length > 1
-  ) {
-    pintMap.fitBounds(
-      bounds,
-      {
-        padding: 60,
-        maxZoom: 12,
-        duration: 0
+        bounds.extend([
+          location.lng,
+          location.lat
+        ]);
       }
     );
-  } else {
-    pintMap.setCenter([
-      locations[0].lng,
-      locations[0].lat
-    ]);
-
-    pintMap.setZoom(10);
-  }
 
 
-  if (mapStatus) {
-    mapStatus.textContent =
-      `${locations.length} ${
-        locations.length === 1
-          ? "place"
-          : "places"
-      } pinned so far.`;
+    state.map.once(
+      "load",
+      () => {
+        if (
+          locations.length > 1
+        ) {
+          state.map.fitBounds(
+            bounds,
+            {
+              padding: 60,
+              maxZoom: 12,
+              duration: 0
+            }
+          );
+        } else {
+          state.map.setCenter([
+            locations[0].lng,
+            locations[0].lat
+          ]);
+
+
+          state.map.setZoom(11);
+        }
+      }
+    );
+
+
+    if (DOM.mapStatus) {
+      DOM.mapStatus.textContent =
+        `${locations.length} ${
+          locations.length === 1
+            ? "place"
+            : "places"
+        } pinned so far.`;
+    }
+
+  } catch (error) {
+    console.error(
+      "[KirkDrinks] Map failed:",
+      error
+    );
+
+
+    showEmptyMap(
+      "The map couldn't be loaded. Beer reviews are still available."
+    );
   }
 }
 
@@ -743,53 +1237,30 @@ function initialisePintMap() {
 // ================================================================
 
 function buildMapLocations(
-  reviewData
+  reviews
 ) {
-  const locationMap =
+  const locations =
     new Map();
 
 
-  reviewData.forEach(
+  reviews.forEach(
     (review, reviewIndex) => {
       const venue =
-        review.venue;
+        getVenue(review);
 
 
-      if (
-        !venue ||
-        typeof venue !== "object" ||
-        !venue.coordinates
-      ) {
+      if (!venue) {
         return;
       }
 
 
-      const lat =
-        Number(
-          venue.coordinates.lat
+      const coordinates =
+        getCoordinates(
+          venue
         );
 
 
-      const lng =
-        Number(
-          venue.coordinates.lng
-        );
-
-
-      if (
-        !Number.isFinite(lat) ||
-        !Number.isFinite(lng)
-      ) {
-        return;
-      }
-
-
-      if (
-        lat < -90 ||
-        lat > 90 ||
-        lng < -180 ||
-        lng > 180
-      ) {
+      if (!coordinates) {
         return;
       }
 
@@ -799,66 +1270,61 @@ function buildMapLocations(
         "Unknown venue";
 
 
-      const venueLocation =
-        venue.location ||
-        review.location ||
-        "";
-
-
-      const country =
-        review.country ||
-        "";
-
-
-      /*
-       * Same venue + same coordinates =
-       * ONE marker containing multiple beers.
-       */
-
       const key =
         [
           venueName
             .trim()
             .toLowerCase(),
 
-          lat.toFixed(5),
+          coordinates.lat
+            .toFixed(5),
 
-          lng.toFixed(5)
-        ]
-          .join("|");
+          coordinates.lng
+            .toFixed(5)
+        ].join("|");
 
 
-      if (
-        !locationMap.has(key)
-      ) {
-        locationMap.set(
+      if (!locations.has(key)) {
+        locations.set(
           key,
           {
             venueName,
-            venueLocation,
-            country,
-            lat,
-            lng,
+
+            location:
+              venue.location ||
+              review.location ||
+              "",
+
+            country:
+              review.country ||
+              "",
+
+            lat:
+              coordinates.lat,
+
+            lng:
+              coordinates.lng,
+
             reviews: []
           }
         );
       }
 
 
-      locationMap
+      locations
         .get(key)
         .reviews
         .push({
-          ...review,
+          review,
           reviewIndex
         });
     }
   );
 
 
-  return [
-    ...locationMap.values()
-  ];
+  return Array.from(
+    locations.values()
+  );
 }
 
 
@@ -866,36 +1332,41 @@ function buildMapLocations(
 // MAP MARKERS
 // ================================================================
 
-function addMapMarker(
+function addPintMarker(
   location
 ) {
-  const markerElement =
+  if (!state.map) {
+    return;
+  }
+
+
+  const marker =
     document.createElement(
       "button"
     );
 
 
-  markerElement.type =
+  marker.type =
     "button";
 
 
-  markerElement.className =
+  marker.className =
     "pint-marker";
 
 
-  markerElement.setAttribute(
-    "aria-label",
-    `View beers reviewed at ${location.venueName}`
-  );
-
-
-  markerElement.textContent =
+  marker.textContent =
     "🍺";
+
+
+  marker.setAttribute(
+    "aria-label",
+    `View beers at ${location.venueName}`
+  );
 
 
   const popup =
     new maplibregl.Popup({
-      offset: 24,
+      offset: 28,
       maxWidth: "320px"
     })
       .setHTML(
@@ -906,7 +1377,7 @@ function addMapMarker(
 
 
   new maplibregl.Marker({
-    element: markerElement,
+    element: marker,
     anchor: "bottom"
   })
     .setLngLat([
@@ -917,7 +1388,7 @@ function addMapMarker(
       popup
     )
     .addTo(
-      pintMap
+      state.map
     );
 }
 
@@ -935,83 +1406,49 @@ function createMapPopup(
     );
 
 
-  const venueLocation =
-    escapeHtml(
-      location.venueLocation
-    );
-
-
-  const country =
-    escapeHtml(
-      location.country
-    );
-
-
-  const locationText =
+  const place =
     [
-      venueLocation,
-      country
+      escapeHtml(
+        location.location
+      ),
+
+      escapeHtml(
+        location.country
+      )
     ]
       .filter(Boolean)
       .join(", ");
 
 
-  const scores =
-    location.reviews
-      .map(
-        review =>
-          Number(review.score)
-      )
-      .filter(
-        score =>
-          Number.isFinite(score)
-      );
-
-
-  const average =
-    scores.length
-      ? (
-          scores.reduce(
-            (sum, score) =>
-              sum + score,
-            0
-          ) /
-          scores.length
-        ).toFixed(1)
-      : null;
-
-
   const beers =
     location.reviews
       .map(
-        review => {
-          const beerName =
+        item => {
+          const name =
             escapeHtml(
-              review.name ||
-              "Unknown beer"
+              item.review.name ||
+              "Mystery pint"
             );
 
 
           const score =
-            normaliseScore(
-              review.score
+            formatScore(
+              item.review.score
             );
 
 
           return `
-            <li>
-              <a
-                href="#review-${review.reviewIndex}"
-              >
-                <span>
-                  ${beerName}
-                </span>
+            <div>
 
-                <strong>
-                  ${score}/10
-                </strong>
-              </a>
-            </li>
+              <span>
+                ${name}
+              </span>
+
+              <strong>
+                ${score}/10
+              </strong>
+
+            </div>
           `;
         }
       )
@@ -1021,52 +1458,47 @@ function createMapPopup(
   return `
     <div class="map-popup">
 
-      <span class="map-popup__eyebrow">
-        🍺 DRANK HERE
-      </span>
-
-      <h3>
+      <strong class="map-popup-title">
         ${venueName}
-      </h3>
+      </strong>
+
 
       ${
-        locationText
+        place
           ? `
-            <p class="map-popup__location">
-              📍 ${locationText}
-            </p>
+            <span class="map-popup-place">
+              📍 ${place}
+            </span>
           `
           : ""
       }
 
-      <div class="map-popup__stats">
 
-        <span>
-          ${
-            location.reviews.length
-          }
-          ${
-            location.reviews.length === 1
-              ? "beer"
-              : "beers"
-          }
-        </span>
+      <span class="map-popup-count">
 
         ${
-          average
-            ? `
-              <span>
-                ⭐ ${average} avg
-              </span>
-            `
-            : ""
+          location.reviews.length
         }
 
+        ${
+          location.reviews.length === 1
+            ? "beer reviewed"
+            : "beers reviewed"
+        }
+
+      </span>
+
+
+      <div class="map-popup-beers">
+        ${beers}
       </div>
 
-      <ul class="map-popup__beers">
-        ${beers}
-      </ul>
+
+      <a
+        href="#review-${location.reviews[0].reviewIndex}"
+      >
+        Jump to review ↓
+      </a>
 
     </div>
   `;
@@ -1074,95 +1506,195 @@ function createMapPopup(
 
 
 // ================================================================
+// MAP EMPTY STATE
+// ================================================================
+
+function showEmptyMap(
+  message
+) {
+  if (DOM.locationCount) {
+    DOM.locationCount.textContent =
+      "0";
+  }
+
+
+  if (DOM.pintMap) {
+    DOM.pintMap.hidden =
+      true;
+  }
+
+
+  if (DOM.mapEmpty) {
+    DOM.mapEmpty.hidden =
+      false;
+  }
+
+
+  if (DOM.mapStatus) {
+    DOM.mapStatus.textContent =
+      message;
+  }
+}
+
+
+function hideEmptyMap() {
+  if (DOM.pintMap) {
+    DOM.pintMap.hidden =
+      false;
+  }
+
+
+  if (DOM.mapEmpty) {
+    DOM.mapEmpty.hidden =
+      true;
+  }
+}
+
+
+// ================================================================
+// COORDINATE VALIDATION
+// ================================================================
+
+function getCoordinates(
+  venue
+) {
+  if (
+    !venue ||
+    !venue.coordinates ||
+    typeof venue.coordinates !==
+    "object"
+  ) {
+    return null;
+  }
+
+
+  const lat =
+    Number(
+      venue.coordinates.lat
+    );
+
+
+  const lng =
+    Number(
+      venue.coordinates.lng
+    );
+
+
+  if (
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng)
+  ) {
+    return null;
+  }
+
+
+  if (
+    lat < -90 ||
+    lat > 90
+  ) {
+    return null;
+  }
+
+
+  if (
+    lng < -180 ||
+    lng > 180
+  ) {
+    return null;
+  }
+
+
+  return {
+    lat,
+    lng
+  };
+}
+
+
+// ================================================================
 // GALLERY
 // ================================================================
 
-async function loadGallery() {
+async function initialiseGallery() {
+  if (!DOM.galleryGrid) {
+    return;
+  }
+
+
   try {
-    const response =
-      await fetch(
-        GALLERY_URL,
-        {
-          cache: "no-store"
-        }
-      );
-
-
-    if (!response.ok) {
-      throw new Error(
-        `Gallery request failed: ${response.status}`
-      );
-    }
-
-
     const data =
-      await response.json();
+      await fetchJson(
+        CONFIG.galleryUrl
+      );
 
 
     if (!Array.isArray(data)) {
       throw new Error(
-        "Gallery JSON must contain an array."
+        "gallery.json must contain a JSON array."
       );
     }
 
 
-    galleryItems =
-      data;
+    state.gallery =
+      data.filter(
+        item =>
+          item &&
+          typeof item === "object"
+      );
 
 
     renderGallery();
 
   } catch (error) {
-    console.error(
-      "Unable to load gallery:",
+    console.warn(
+      "[KirkDrinks] Gallery unavailable:",
       error
     );
 
 
-    if (galleryGrid) {
-      galleryGrid.innerHTML = `
-        <p class="empty-state">
-          Couldn't load the gallery.
-        </p>
-      `;
-    }
+    DOM.galleryGrid.innerHTML = `
+      <div class="empty-state">
+        Beer Cam currently unavailable.
+      </div>
+    `;
   }
 }
 
 
+// ================================================================
+// GALLERY RENDERER
+// ================================================================
+
 function renderGallery() {
-  if (!galleryGrid) {
+  if (!DOM.galleryGrid) {
     return;
   }
 
 
-  if (
-    galleryItems.length === 0
-  ) {
-    galleryGrid.innerHTML = `
-      <p class="empty-state">
-        No photos yet.
-      </p>
+  if (state.gallery.length === 0) {
+    DOM.galleryGrid.innerHTML = `
+      <div class="empty-state">
+        Beer Cam coming soon.
+      </div>
     `;
 
     return;
   }
 
 
-  galleryGrid.innerHTML =
-    galleryItems
+  DOM.galleryGrid.innerHTML =
+    state.gallery
       .map(
         item => {
           const image =
-            safeImagePath(
+            safeAssetPath(
               item.image
             );
 
 
-          const caption =
-            escapeHtml(
-              item.caption || ""
-            );
+          if (!image) {
+            return "";
+          }
 
 
           const alt =
@@ -1173,8 +1705,14 @@ function renderGallery() {
             );
 
 
+          const caption =
+            escapeHtml(
+              item.caption || ""
+            );
+
+
           return `
-            <figure class="gallery-card">
+            <figure class="gallery-item">
 
               <img
                 src="${image}"
@@ -1186,7 +1724,7 @@ function renderGallery() {
               ${
                 caption
                   ? `
-                    <figcaption>
+                    <figcaption class="gallery-caption">
                       ${caption}
                     </figcaption>
                   `
@@ -1205,64 +1743,31 @@ function renderGallery() {
 // SUPPORTERS
 // ================================================================
 
-async function loadSupporters() {
+async function initialiseSupporters() {
   try {
-
-    /*
-     * Primary source:
-     * live Cloudflare Worker / D1 API.
-     */
-
-    const response =
-      await fetch(
-        SUPPORTERS_API,
-        {
-          method: "GET",
-          mode: "cors",
-          cache: "no-store",
-          headers: {
-            "Accept":
-              "application/json"
-          }
-        }
-      );
-
-
-    if (!response.ok) {
-      throw new Error(
-        `Supporter API returned ${response.status}`
-      );
-    }
-
-
     const data =
-      await response.json();
-
-
-    if (
-      !data ||
-      !Array.isArray(
-        data.supporters
-      )
-    ) {
-      throw new Error(
-        "Unexpected supporter API response."
+      await fetchJson(
+        CONFIG.supportersApiUrl
       );
-    }
 
 
-    supporters =
-      data.supporters;
+    const parsed =
+      normaliseSupporterResponse(
+        data
+      );
+
+
+    state.supporters =
+      parsed.supporters;
 
 
     renderSupporters(
-      data.totalBeers
+      parsed.totalBeers
     );
 
   } catch (error) {
-
     console.warn(
-      "Live supporter API unavailable. Using static fallback.",
+      "[KirkDrinks] Live supporter API unavailable. Trying fallback:",
       error
     );
 
@@ -1272,49 +1777,40 @@ async function loadSupporters() {
 }
 
 
+// ================================================================
+// SUPPORTER FALLBACK
+// ================================================================
+
 async function loadSupporterFallback() {
   try {
-    const response =
-      await fetch(
-        SUPPORTERS_FALLBACK,
-        {
-          cache: "no-store"
-        }
-      );
-
-
-    if (!response.ok) {
-      throw new Error(
-        `Supporter fallback returned ${response.status}`
-      );
-    }
-
-
     const data =
-      await response.json();
-
-
-    if (!Array.isArray(data)) {
-      throw new Error(
-        "Supporter fallback must contain an array."
+      await fetchJson(
+        CONFIG.supportersFallbackUrl
       );
-    }
 
 
-    supporters =
-      data;
+    const parsed =
+      normaliseSupporterResponse(
+        data
+      );
 
 
-    renderSupporters();
+    state.supporters =
+      parsed.supporters;
+
+
+    renderSupporters(
+      parsed.totalBeers
+    );
 
   } catch (error) {
     console.error(
-      "Unable to load supporter data:",
+      "[KirkDrinks] Supporter fallback failed:",
       error
     );
 
 
-    supporters = [];
+    state.supporters = [];
 
 
     renderSupporters(0);
@@ -1323,38 +1819,111 @@ async function loadSupporterFallback() {
 
 
 // ================================================================
-// RENDER SUPPORTERS
+// SUPPORTER RESPONSE NORMALISATION
+// ================================================================
+
+function normaliseSupporterResponse(
+  data
+) {
+  /*
+   * Supports:
+   *
+   * API:
+   *
+   * {
+   *   supporters: [...],
+   *   totalBeers: 5
+   * }
+   *
+   * AND legacy static:
+   *
+   * [
+   *   {...}
+   * ]
+   */
+
+
+  if (Array.isArray(data)) {
+    return {
+      supporters:
+        data.filter(
+          supporter =>
+            supporter &&
+            typeof supporter ===
+            "object"
+        ),
+
+      totalBeers:
+        null
+    };
+  }
+
+
+  if (
+    data &&
+    typeof data === "object" &&
+    Array.isArray(
+      data.supporters
+    )
+  ) {
+    return {
+      supporters:
+        data.supporters.filter(
+          supporter =>
+            supporter &&
+            typeof supporter ===
+            "object"
+        ),
+
+      totalBeers:
+        Number.isFinite(
+          Number(
+            data.totalBeers
+          )
+        )
+          ? Number(
+              data.totalBeers
+            )
+          : null
+    };
+  }
+
+
+  throw new Error(
+    "Unexpected supporter response."
+  );
+}
+
+
+// ================================================================
+// SUPPORTER RENDERER
 // ================================================================
 
 function renderSupporters(
   suppliedTotal = null
 ) {
-  if (supporterGrid) {
+  const supporters =
+    state.supporters;
 
-    if (
-      supporters.length === 0
-    ) {
-      supporterGrid.innerHTML = `
-        <div class="supporter-empty">
 
-          <span>
-            🍺
-          </span>
-
-          <p>
-            Nobody has funded the research yet.
-          </p>
+  if (DOM.supportersGrid) {
+    if (supporters.length === 0) {
+      DOM.supportersGrid.innerHTML = `
+        <div class="empty-state">
 
           <strong>
-            Your move.
+            No funded pints yet.
           </strong>
+
+          <p>
+            Somebody has to become the first legend.
+          </p>
 
         </div>
       `;
 
     } else {
-
-      supporterGrid.innerHTML =
+      DOM.supportersGrid.innerHTML =
         supporters
           .map(
             supporter =>
@@ -1367,102 +1936,194 @@ function renderSupporters(
   }
 
 
-  if (totalBeersFunded) {
-
-    const calculatedTotal =
-      supporters.reduce(
-        (
-          total,
+  const calculatedTotal =
+    supporters.reduce(
+      (total, supporter) =>
+        total +
+        getSupporterBeerCount(
           supporter
-        ) =>
-          total +
-          safePositiveInteger(
-            supporter.beers
-          ),
-        0
-      );
+        ),
+      0
+    );
 
 
-    const apiTotal =
+  const total =
+    suppliedTotal !== null &&
+    Number.isFinite(
       Number(
         suppliedTotal
-      );
+      )
+    )
+      ? Number(
+          suppliedTotal
+        )
+      : calculatedTotal;
 
 
-    totalBeersFunded.textContent =
-      Number.isFinite(apiTotal)
-        ? String(apiTotal)
-        : String(
-            calculatedTotal
-          );
+  if (DOM.fundedCount) {
+    DOM.fundedCount.textContent =
+      String(total);
   }
+
+
+  if (DOM.supporterCount) {
+    DOM.supporterCount.textContent =
+      String(total);
+  }
+
+
+  updateBeerMeter(
+    total
+  );
 }
 
+
+// ================================================================
+// SUPPORTER CARD
+// ================================================================
 
 function createSupporterCard(
   supporter
 ) {
+  /*
+   * Accept several possible field names because the
+   * Worker/D1 representation may differ from the
+   * original static JSON.
+   */
+
+
   const name =
     escapeHtml(
       supporter.name ||
+      supporter.supporter_name ||
       "Anonymous legend"
-    );
-
-
-  const beers =
-    safePositiveInteger(
-      supporter.beers
     );
 
 
   const message =
     escapeHtml(
-      supporter.message || ""
+      supporter.message ||
+      supporter.note ||
+      supporter.support_note ||
+      ""
+    );
+
+
+  const beers =
+    getSupporterBeerCount(
+      supporter
     );
 
 
   return `
-    <article class="supporter-card">
+    <article class="supporter">
 
-      <div class="supporter-card__beer">
-        🍺
-      </div>
+      <div class="supporter-top">
 
-
-      <div class="supporter-card__content">
-
-        <h3>
+        <strong>
           ${name}
-        </h3>
+        </strong>
 
-
-        <p class="supporter-card__count">
-          bought Kirk
-          <strong>
-            ${beers}
-          </strong>
-          ${
-            beers === 1
-              ? "beer"
-              : "beers"
-          }
-        </p>
-
-
-        ${
-          message
-            ? `
-              <blockquote>
-                “${message}”
-              </blockquote>
-            `
-            : ""
-        }
+        <span class="beers">
+          🍺 × ${beers}
+        </span>
 
       </div>
+
+
+      ${
+        message
+          ? `
+            <p>
+              “${message}”
+            </p>
+          `
+          : ""
+      }
 
     </article>
   `;
+}
+
+
+// ================================================================
+// SUPPORTER BEER COUNT
+// ================================================================
+
+function getSupporterBeerCount(
+  supporter
+) {
+  const possibleValues = [
+    supporter.beers,
+    supporter.coffee_count,
+    supporter.coffeeCount,
+    supporter.quantity
+  ];
+
+
+  for (
+    const value of
+    possibleValues
+  ) {
+    const number =
+      Number(value);
+
+
+    if (
+      Number.isFinite(number) &&
+      number > 0
+    ) {
+      return Math.floor(
+        number
+      );
+    }
+  }
+
+
+  return 1;
+}
+
+
+// ================================================================
+// BEER METER
+// ================================================================
+
+function updateBeerMeter(
+  total
+) {
+  if (!DOM.beerMeterFill) {
+    return;
+  }
+
+
+  /*
+   * Visual target:
+   * every 10 funded beers fills the bar.
+   *
+   * At 10 it resets visually for the next round.
+   */
+
+
+  if (total <= 0) {
+    DOM.beerMeterFill.style.width =
+      "0%";
+
+    return;
+  }
+
+
+  const progress =
+    total % 10;
+
+
+  const percentage =
+    progress === 0
+      ? 100
+      : progress * 10;
+
+
+  DOM.beerMeterFill.style.width =
+    `${percentage}%`;
 }
 
 
@@ -1472,51 +2133,50 @@ function createSupporterCard(
 
 function initialiseNavigation() {
   if (
-    !menuToggle ||
-    !siteNav
+    !DOM.menuToggle ||
+    !DOM.siteNav
   ) {
     return;
   }
 
 
-  menuToggle.addEventListener(
+  DOM.menuToggle.addEventListener(
     "click",
     () => {
-      const expanded =
-        menuToggle.getAttribute(
-          "aria-expanded"
-        ) === "true";
+      const isOpen =
+        DOM.siteNav.classList
+          .contains("open");
 
 
-      menuToggle.setAttribute(
-        "aria-expanded",
-        String(!expanded)
+      DOM.siteNav.classList.toggle(
+        "open",
+        !isOpen
       );
 
 
-      siteNav.classList.toggle(
-        "site-nav--open",
-        !expanded
+      DOM.menuToggle.setAttribute(
+        "aria-expanded",
+        String(!isOpen)
       );
     }
   );
 
 
-  siteNav
+  DOM.siteNav
     .querySelectorAll("a")
     .forEach(
       link => {
         link.addEventListener(
           "click",
           () => {
-            menuToggle.setAttribute(
-              "aria-expanded",
-              "false"
+            DOM.siteNav.classList.remove(
+              "open"
             );
 
 
-            siteNav.classList.remove(
-              "site-nav--open"
+            DOM.menuToggle.setAttribute(
+              "aria-expanded",
+              "false"
             );
           }
         );
@@ -1526,71 +2186,152 @@ function initialiseNavigation() {
 
 
 // ================================================================
-// HELPERS
+// FOOTER
 // ================================================================
 
-function normaliseScore(
-  value
-) {
-  const score =
-    Number(value);
-
-
-  if (!Number.isFinite(score)) {
-    return "—";
+function initialiseFooter() {
+  if (!DOM.year) {
+    return;
   }
 
 
-  const safeScore =
-    Math.min(
-      10,
-      Math.max(
-        0,
-        score
-      )
+  DOM.year.textContent =
+    String(
+      new Date().getFullYear()
     );
-
-
-  return safeScore.toFixed(1);
 }
 
 
-function safePositiveInteger(
-  value
+// ================================================================
+// FETCH HELPER
+// ================================================================
+
+async function fetchJson(
+  url
 ) {
-  const number =
-    Number(value);
+  const response =
+    await fetch(
+      url,
+      {
+        method: "GET",
+
+        headers: {
+          "Accept":
+            "application/json"
+        },
+
+        cache:
+          "no-store"
+      }
+    );
 
 
-  if (
-    !Number.isFinite(number) ||
-    number <= 0
-  ) {
-    return 1;
+  if (!response.ok) {
+    throw new Error(
+      `${url} returned HTTP ${response.status}`
+    );
   }
 
 
-  return Math.floor(
-    number
+  const contentType =
+    response.headers.get(
+      "content-type"
+    ) || "";
+
+
+  /*
+   * Don't require Content-Type to be correct because
+   * GitHub Pages/static hosts occasionally serve JSON
+   * with generic MIME types.
+   */
+
+  const text =
+    await response.text();
+
+
+  try {
+    return JSON.parse(
+      text
+    );
+
+  } catch {
+    throw new Error(
+      `${url} did not return valid JSON. Content-Type: ${contentType}`
+    );
+  }
+}
+
+
+// ================================================================
+// PRICE HELPERS
+// ================================================================
+
+function getReviewPrice(
+  review
+) {
+  /*
+   * New schema:
+   * review.venue.pricePaid
+   *
+   * Legacy compatibility:
+   * review.pricePaid
+   */
+
+
+  const venue =
+    getVenue(review);
+
+
+  const amount =
+    venue &&
+    venue.pricePaid !== undefined &&
+    venue.pricePaid !== null
+      ? venue.pricePaid
+      : review.pricePaid;
+
+
+  const currency =
+    venue &&
+    venue.currency
+      ? venue.currency
+      : review.currency;
+
+
+  return formatMoney(
+    amount,
+    currency
   );
 }
 
 
-function formatPrice(
-  value,
+function getVenuePrice(
+  venue
+) {
+  return formatMoney(
+    venue.pricePaid,
+    venue.currency
+  );
+}
+
+
+function formatMoney(
+  amount,
   currency
 ) {
-  const amount =
-    Number(value);
+  const number =
+    Number(amount);
 
 
-  if (!Number.isFinite(amount)) {
+  if (
+    !Number.isFinite(number)
+  ) {
     return "";
   }
 
 
   const currencyCode =
-    typeof currency === "string" &&
+    typeof currency ===
+    "string" &&
     /^[A-Za-z]{3}$/.test(
       currency
     )
@@ -1602,19 +2343,152 @@ function formatPrice(
     return new Intl.NumberFormat(
       "en-GB",
       {
-        style: "currency",
+        style:
+          "currency",
+
         currency:
-          currencyCode
+          currencyCode,
+
+        minimumFractionDigits:
+          2,
+
+        maximumFractionDigits:
+          2
       }
-    ).format(amount);
+    ).format(number);
 
   } catch {
-    return `${amount.toFixed(2)} ${currencyCode}`;
+    return `${number.toFixed(2)} ${currencyCode}`;
   }
 }
 
 
-function safeImagePath(
+// ================================================================
+// SCORE HELPERS
+// ================================================================
+
+function formatScore(
+  value
+) {
+  const score =
+    Number(value);
+
+
+  if (
+    !Number.isFinite(score)
+  ) {
+    return "—";
+  }
+
+
+  /*
+   * Preserve scores such as 4.65 rather than forcing
+   * everything to one decimal place.
+   */
+
+
+  return String(
+    Math.round(
+      score * 100
+    ) / 100
+  );
+}
+
+
+function optionalScore(
+  value
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+
+  const score =
+    Number(value);
+
+
+  if (
+    !Number.isFinite(score)
+  ) {
+    return null;
+  }
+
+
+  if (
+    score < 0 ||
+    score > 10
+  ) {
+    return null;
+  }
+
+
+  return score;
+}
+
+
+// ================================================================
+// VENUE IDENTIFIERS
+// ================================================================
+
+function createVenueKey(
+  venue,
+  review
+) {
+  const name =
+    String(
+      venue.name || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  const location =
+    String(
+      venue.location ||
+      review.location ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  return `${name}|${location}`;
+}
+
+
+function createVenueId(
+  venue
+) {
+  const value =
+    String(
+      venue.name ||
+      "venue"
+    )
+      .toLowerCase()
+      .trim()
+      .replace(
+        /[^a-z0-9]+/g,
+        "-"
+      )
+      .replace(
+        /^-+|-+$/g,
+        ""
+      );
+
+
+  return `venue-${value || "unknown"}`;
+}
+
+
+// ================================================================
+// ASSET PATH VALIDATION
+// ================================================================
+
+function safeAssetPath(
   value
 ) {
   if (
@@ -1629,13 +2503,16 @@ function safeImagePath(
 
 
   /*
-   * Images for KirkDrinks are expected to be
-   * local static assets.
+   * Only allow local assets.
+   *
+   * Prevents JSON content from injecting javascript:
+   * URLs or unexpected third-party image sources.
    */
 
+
   if (
-    path.startsWith(
-      "assets/"
+    /^assets\/[A-Za-z0-9._/-]+$/.test(
+      path
     )
   ) {
     return path;
@@ -1646,16 +2523,16 @@ function safeImagePath(
 }
 
 
+// ================================================================
+// HTML ESCAPING
+// ================================================================
+
 function escapeHtml(
   value
 ) {
-  const text =
-    String(
-      value ?? ""
-    );
-
-
-  return text
+  return String(
+    value ?? ""
+  )
     .replace(
       /&/g,
       "&amp;"
@@ -1676,4 +2553,4 @@ function escapeHtml(
       /'/g,
       "&#039;"
     );
-      }
+}
