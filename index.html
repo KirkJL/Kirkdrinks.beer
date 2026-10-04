@@ -48,12 +48,7 @@
     href="https://kirkdrinks.beer/"
   >
 
-  <!--
-    MapLibre CSS.
-
-    JavaScript is imported properly as an ES module
-    at the bottom of this page.
-  -->
+  <!-- MapLibre CSS -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.css"
@@ -155,6 +150,14 @@
         </a>
 
         <a
+          href="https://www.tiktok.com/@kirkdrinks.beer"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          TikTok ↗
+        </a>
+
+        <a
           class="nav-cta"
           href="#buy"
         >
@@ -192,8 +195,6 @@
 
       <div class="container hero-grid">
 
-
-        <!-- Hero copy -->
 
         <div class="hero-content">
 
@@ -244,8 +245,6 @@
 
         </div>
 
-
-        <!-- Stats -->
 
         <aside
           class="score-card"
@@ -357,11 +356,6 @@
         </div>
 
 
-        <!--
-          app.js inserts every beer review here.
-
-          Coordinates are NOT required for reviews to render.
-        -->
         <div
           id="reviews-grid"
           class="reviews-grid"
@@ -415,7 +409,6 @@
 
         <div class="map-shell">
 
-          <!-- MapLibre renders inside this element -->
           <div
             id="pint-map"
             class="pint-map"
@@ -424,9 +417,6 @@
           ></div>
 
 
-          <!--
-            Shown by app.js when no reviews have coordinates.
-          -->
           <div
             id="map-empty"
             class="map-empty"
@@ -520,12 +510,6 @@
         </div>
 
 
-        <!--
-          app.js only renders venue cards where useful
-          venue-review data exists.
-
-          Old reviews with null venue scores remain valid.
-        -->
         <div
           id="venues-grid"
           class="venues-grid"
@@ -653,13 +637,6 @@
         </div>
 
 
-        <!--
-          Primary data source:
-          Cloudflare Worker / D1
-
-          Fallback:
-          data/supporters.json
-        -->
         <div
           id="supporters-grid"
           class="supporters-grid"
@@ -784,6 +761,15 @@
       <p>
         Built with HTML, CSS, JavaScript
         and poor impulse control.
+
+        <a
+          class="footer-social-link"
+          href="https://www.tiktok.com/@kirkdrinks.beer"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Follow @kirkdrinks.beer on TikTok ↗
+        </a>
       </p>
 
     </div>
@@ -792,16 +778,50 @@
 
 
   <!-- ==========================================================
+       IMAGE LIGHTBOX
+  =========================================================== -->
+
+  <div
+    id="image-lightbox"
+    class="image-lightbox"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-label="Image viewer"
+  >
+
+    <button
+      id="image-lightbox-close"
+      class="image-lightbox-close"
+      type="button"
+      aria-label="Close image viewer"
+    >
+      ×
+    </button>
+
+
+    <div class="image-lightbox-content">
+
+      <img
+        id="image-lightbox-image"
+        class="image-lightbox-image"
+        src=""
+        alt=""
+      >
+
+
+      <p
+        id="image-lightbox-caption"
+        class="image-lightbox-caption"
+      ></p>
+
+    </div>
+
+  </div>
+
+
+  <!-- ==========================================================
        JAVASCRIPT
-
-       IMPORTANT:
-
-       app.js will import MapLibre itself using:
-
-       import maplibregl from
-       "https://unpkg.com/maplibre-gl@6.11.2/dist/maplibre-gl.mjs";
-
-       Do NOT add another MapLibre <script> tag here.
   =========================================================== -->
 
   <script
