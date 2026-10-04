@@ -92,7 +92,19 @@ const DOM = {
     document.querySelector("#supporters-grid"),
 
   year:
-    document.querySelector("#year")
+    document.querySelector("#year"),
+
+  imageLightbox:
+    document.querySelector("#image-lightbox"),
+
+  imageLightboxImage:
+    document.querySelector("#image-lightbox-image"),
+
+  imageLightboxCaption:
+    document.querySelector("#image-lightbox-caption"),
+
+  imageLightboxClose:
+    document.querySelector("#image-lightbox-close")
 };
 
 
@@ -125,6 +137,8 @@ async function initialiseSite() {
   );
 
   initialiseNavigation();
+
+  initialiseImageLightbox();
 
   initialiseFooter();
 
@@ -172,12 +186,25 @@ async function initialiseReviews() {
     }
 
 
+    /*
+     * Review order inside reviews.json does NOT matter.
+     *
+     * Reviews with a valid YYYY-MM-DD date are automatically
+     * sorted newest -> oldest.
+     *
+     * Reviews without a valid date are safely placed last.
+     */
+
     state.reviews =
-      data.filter(
-        review =>
-          review &&
-          typeof review === "object"
-      );
+      data
+        .filter(
+          review =>
+            review &&
+            typeof review === "object"
+        )
+        .sort(
+          compareReviewsNewestFirst
+        );
 
 
     console.info(
@@ -235,6 +262,71 @@ async function initialiseReviews() {
       "The beer reviews couldn't be loaded, so the map is unavailable."
     );
   }
+}
+
+
+// ================================================================
+// REVIEW DATE SORTING
+// ================================================================
+
+function compareReviewsNewestFirst(
+  a,
+  b
+) {
+  const aTime =
+    parseReviewDate(
+      a.date
+    );
+
+
+  const bTime =
+    parseReviewDate(
+      b.date
+    );
+
+
+  if (
+    aTime === null &&
+    bTime === null
+  ) {
+    return 0;
+  }
+
+
+  if (aTime === null) {
+    return 1;
+  }
+
+
+  if (bTime === null) {
+    return -1;
+  }
+
+
+  return bTime - aTime;
+}
+
+
+function parseReviewDate(
+  value
+) {
+  if (
+    typeof value !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) {
+    return null;
+  }
+
+
+  const timestamp =
+    Date.parse(
+      `${value}T00:00:00Z`
+    );
+
+
+  return Number.isFinite(timestamp)
+    ? timestamp
+    : null;
 }
 
 
@@ -379,6 +471,9 @@ function createReviewCard(
                 alt="${alt}"
                 loading="lazy"
                 decoding="async"
+                tabindex="0"
+                role="button"
+                aria-label="Open larger image: ${alt}"
               >
             `
             : `
@@ -1139,10 +1234,6 @@ async function initialisePintMap() {
   }
 
 
-  /*
-   * Don't request MapLibre when there are no coordinates.
-   */
-
   if (locations.length === 0) {
     showMapUnavailable(
       "No places pinned yet — add coordinates to a venue and its pint marker will appear here."
@@ -1151,11 +1242,6 @@ async function initialisePintMap() {
     return;
   }
 
-
-  /*
-   * MapLibre remains dynamically imported so failure cannot
-   * interfere with the core site.
-   */
 
   let mapModule;
 
@@ -1253,6 +1339,11 @@ async function initialisePintMap() {
 
     locations.forEach(
       location => {
+        addPintMarker(
+          location
+        );
+
+
         bounds.extend([
           location.lng,
           location.lat
@@ -1261,18 +1352,9 @@ async function initialisePintMap() {
     );
 
 
-    /*
-     * Sources and layers must be added once the map style is ready.
-     */
-
     state.map.once(
       "load",
       () => {
-        addClusteredPintLayer(
-          locations
-        );
-
-
         if (
           locations.length > 1
         ) {
@@ -1321,7 +1403,7 @@ async function initialisePintMap() {
 
 
     console.info(
-      `[KirkDrinks] Pint map initialising with ${locations.length} venue locations.`
+      `[KirkDrinks] Pint map initialised with ${locations.length} locations.`
     );
 
   } catch (error) {
@@ -1377,14 +1459,6 @@ function buildMapLocations(
         venue.name ||
         "Unknown venue";
 
-
-      /*
-       * Reviews from the exact same venue are consolidated BEFORE
-       * geographic clustering.
-       *
-       * This means five beers at The Ale House become one venue
-       * point containing five beer reviews.
-       */
 
       const key =
         [
@@ -1495,11 +1569,11 @@ function getCoordinates(
 
 
 // ================================================================
-// MAP CLUSTERING
+// MAP MARKERS
 // ================================================================
 
-function addClusteredPintLayer(
-  locations
+function addPintMarker(
+  location
 ) {
   if (
     !state.map ||
@@ -1509,629 +1583,58 @@ function addClusteredPintLayer(
   }
 
 
-  /*
-   * Convert our venue collection into GeoJSON.
-   *
-   * Each feature represents ONE VENUE rather than one beer.
-   */
-
-  const geoJson = {
-    type:
-      "FeatureCollection",
-
-    features:
-      locations.map(
-        (location, index) => ({
-          type:
-            "Feature",
-
-          geometry: {
-            type:
-              "Point",
-
-            coordinates: [
-              location.lng,
-              location.lat
-            ]
-          },
-
-          properties: {
-            locationIndex:
-              index,
-
-            venueName:
-              location.venueName,
-
-            beerCount:
-              location.reviews.length
-          }
-        })
-      )
-  };
+  const marker =
+    document.createElement(
+      "button"
+    );
 
 
-  /*
-   * Native MapLibre GeoJSON clustering.
-   *
-   * Nearby venues are grouped together until the user zooms in.
-   */
+  marker.type =
+    "button";
 
-  state.map.addSource(
-    "pint-locations",
-    {
-      type:
-        "geojson",
 
-      data:
-        geoJson,
+  marker.className =
+    "pint-marker";
 
-      cluster:
-        true,
 
-      clusterMaxZoom:
-        13,
+  marker.textContent =
+    "🍺";
 
-      clusterRadius:
-        50
-    }
+
+  marker.setAttribute(
+    "aria-label",
+    `View beers at ${location.venueName}`
   );
 
 
-  /*
-   * --------------------------------------------------------------
-   * CLUSTER CIRCLES
-   * --------------------------------------------------------------
-   */
-
-  state.map.addLayer({
-    id:
-      "pint-clusters",
-
-    type:
-      "circle",
-
-    source:
-      "pint-locations",
-
-    filter: [
-      "has",
-      "point_count"
-    ],
-
-    paint: {
-      "circle-radius": [
-        "step",
-
-        [
-          "get",
-          "point_count"
-        ],
-
-        22,
-
-        5,
-        26,
-
-        10,
-        30,
-
-        25,
-        34
-      ],
-
-      "circle-color":
-        "#f4b942",
-
-      "circle-stroke-width":
-        3,
-
-      "circle-stroke-color":
-        "#ffffff"
-    }
-  });
-
-
-  /*
-   * Cluster count.
-   *
-   * This number represents nearby VENUES.
-   */
-
-  state.map.addLayer({
-    id:
-      "pint-cluster-count",
-
-    type:
-      "symbol",
-
-    source:
-      "pint-locations",
-
-    filter: [
-      "has",
-      "point_count"
-    ],
-
-    layout: {
-      "text-field": [
-        "concat",
-
-        "🍺 ",
-
-        [
-          "get",
-          "point_count_abbreviated"
-        ]
-      ],
-
-      "text-size":
-        15,
-
-      "text-allow-overlap":
-        true
-    },
-
-    paint: {
-      "text-color":
-        "#111111"
-    }
-  });
-
-
-  /*
-   * --------------------------------------------------------------
-   * INDIVIDUAL VENUE CIRCLES
-   * --------------------------------------------------------------
-   */
-
-  state.map.addLayer({
-    id:
-      "pint-venues",
-
-    type:
-      "circle",
-
-    source:
-      "pint-locations",
-
-    filter: [
-      "!",
-      [
-        "has",
-        "point_count"
-      ]
-    ],
-
-    paint: {
-      "circle-radius": [
-        "case",
-
-        [
-          ">",
-          [
-            "get",
-            "beerCount"
-          ],
-          1
-        ],
-
-        19,
-
-        17
-      ],
-
-      "circle-color":
-        "#f4b942",
-
-      "circle-stroke-width":
-        3,
-
-      "circle-stroke-color":
-        "#ffffff"
-    }
-  });
-
-
-  /*
-   * Individual venue label.
-   *
-   * One beer:
-   *
-   * 🍺
-   *
-   * Multiple beers at the same venue:
-   *
-   * 🍺 5
-   */
-
-  state.map.addLayer({
-    id:
-      "pint-venue-labels",
-
-    type:
-      "symbol",
-
-    source:
-      "pint-locations",
-
-    filter: [
-      "!",
-      [
-        "has",
-        "point_count"
-      ]
-    ],
-
-    layout: {
-      "text-field": [
-        "case",
-
-        [
-          ">",
-          [
-            "get",
-            "beerCount"
-          ],
-          1
-        ],
-
-        [
-          "concat",
-
-          "🍺 ",
-
-          [
-            "to-string",
-            [
-              "get",
-              "beerCount"
-            ]
-          ]
-        ],
-
-        "🍺"
-      ],
-
-      "text-size":
-        14,
-
-      "text-allow-overlap":
-        true
-    },
-
-    paint: {
-      "text-color":
-        "#111111"
-    }
-  });
-
-
-  /*
-   * --------------------------------------------------------------
-   * CLUSTER CLICK
-   * --------------------------------------------------------------
-   *
-   * Clicking a cluster calculates the zoom required to split that
-   * cluster into its children.
-   */
-
-  state.map.on(
-    "click",
-    "pint-clusters",
-    async event => {
-      const features =
-        state.map.queryRenderedFeatures(
-          event.point,
-          {
-            layers: [
-              "pint-clusters"
-            ]
-          }
-        );
-
-
-      const feature =
-        features[0];
-
-
-      if (
-        !feature ||
-        !feature.properties
-      ) {
-        return;
-      }
-
-
-      const clusterId =
-        feature.properties.cluster_id;
-
-
-      if (
-        clusterId === undefined ||
-        clusterId === null
-      ) {
-        return;
-      }
-
-
-      try {
-        const source =
-          state.map.getSource(
-            "pint-locations"
-          );
-
-
-        const zoom =
-          await source
-            .getClusterExpansionZoom(
-              clusterId
-            );
-
-
-        state.map.easeTo({
-          center:
-            feature.geometry.coordinates,
-
-          zoom:
-            zoom
-        });
-
-      } catch (error) {
-        console.error(
-          "[KirkDrinks] Couldn't expand map cluster:",
-          error
-        );
-      }
-    }
-  );
-
-
-  /*
-   * --------------------------------------------------------------
-   * VENUE CLICK
-   * --------------------------------------------------------------
-   */
-
-  state.map.on(
-    "click",
-    "pint-venues",
-    event => {
-      openVenueMapPopup(
-        event,
-        locations
+  const popup =
+    new state.maplibregl.Popup({
+      offset: 28,
+      maxWidth: "320px"
+    })
+      .setHTML(
+        createMapPopup(
+          location
+        )
       );
-    }
-  );
 
 
-  /*
-   * Symbol labels can receive the click instead of the underlying
-   * circle, so both layers intentionally open the same popup.
-   */
-
-  state.map.on(
-    "click",
-    "pint-venue-labels",
-    event => {
-      openVenueMapPopup(
-        event,
-        locations
-      );
-    }
-  );
-
-
-  /*
-   * --------------------------------------------------------------
-   * CURSOR FEEDBACK
-   * --------------------------------------------------------------
-   */
-
-  [
-    "pint-clusters",
-    "pint-cluster-count",
-    "pint-venues",
-    "pint-venue-labels"
-  ]
-    .forEach(
-      layerId => {
-        state.map.on(
-          "mouseenter",
-          layerId,
-          () => {
-            state.map
-              .getCanvas()
-              .style.cursor =
-                "pointer";
-          }
-        );
-
-
-        state.map.on(
-          "mouseleave",
-          layerId,
-          () => {
-            state.map
-              .getCanvas()
-              .style.cursor =
-                "";
-          }
-        );
-      }
-    );
-
-
-  /*
-   * The count text sits on top of the cluster circle.
-   *
-   * Give the text layer the same zoom behaviour so clicking
-   * directly on the number also expands the cluster.
-   */
-
-  state.map.on(
-    "click",
-    "pint-cluster-count",
-    async event => {
-      const feature =
-        event.features &&
-        event.features[0];
-
-
-      if (
-        !feature ||
-        !feature.properties
-      ) {
-        return;
-      }
-
-
-      const clusterId =
-        feature.properties.cluster_id;
-
-
-      if (
-        clusterId === undefined ||
-        clusterId === null
-      ) {
-        return;
-      }
-
-
-      try {
-        const source =
-          state.map.getSource(
-            "pint-locations"
-          );
-
-
-        const zoom =
-          await source
-            .getClusterExpansionZoom(
-              clusterId
-            );
-
-
-        state.map.easeTo({
-          center:
-            feature.geometry.coordinates,
-
-          zoom:
-            zoom
-        });
-
-      } catch (error) {
-        console.error(
-          "[KirkDrinks] Couldn't expand map cluster:",
-          error
-        );
-      }
-    }
-  );
-
-
-  console.info(
-    `[KirkDrinks] Native clustering enabled for ${locations.length} venues.`
-  );
-}
-
-
-// ================================================================
-// MAP VENUE POPUP
-// ================================================================
-
-function openVenueMapPopup(
-  event,
-  locations
-) {
-  if (
-    !event ||
-    !event.features ||
-    event.features.length === 0
-  ) {
-    return;
-  }
-
-
-  const feature =
-    event.features[0];
-
-
-  const locationIndex =
-    Number(
-      feature.properties
-        ?.locationIndex
-    );
-
-
-  if (
-    !Number.isInteger(
-      locationIndex
-    ) ||
-    !locations[
-      locationIndex
-    ]
-  ) {
-    console.warn(
-      "[KirkDrinks] Map venue had an invalid location index."
-    );
-
-    return;
-  }
-
-
-  const location =
-    locations[
-      locationIndex
-    ];
-
-
-  const coordinates =
-    feature.geometry.coordinates
-      .slice();
-
-
-  /*
-   * Correct longitude wrapping around the international date line.
-   */
-
-  while (
-    Math.abs(
-      event.lngLat.lng -
-      coordinates[0]
-    ) > 180
-  ) {
-    coordinates[0] +=
-      event.lngLat.lng >
-      coordinates[0]
-        ? 360
-        : -360;
-  }
-
-
-  new state.maplibregl.Popup({
-    offset:
-      24,
-
-    maxWidth:
-      "320px"
+  new state.maplibregl.Marker({
+    element: marker,
+    anchor: "bottom"
   })
-    .setLngLat(
-      coordinates
-    )
-    .setHTML(
-      createMapPopup(
-        location
-      )
+    .setLngLat([
+      location.lng,
+      location.lat
+    ])
+    .setPopup(
+      popup
     )
     .addTo(
       state.map
     );
 }
 
-
-// ================================================================
-// MAP POPUP
-// ================================================================
 
 function createMapPopup(
   location
@@ -2384,6 +1887,9 @@ function renderGallery() {
                 alt="${alt}"
                 loading="lazy"
                 decoding="async"
+                tabindex="0"
+                role="button"
+                aria-label="Open larger image: ${alt}"
               >
 
               ${
@@ -2794,6 +2300,221 @@ function initialiseNavigation() {
 
 
 // ================================================================
+// IMAGE LIGHTBOX
+// ================================================================
+
+function initialiseImageLightbox() {
+  if (
+    !DOM.imageLightbox ||
+    !DOM.imageLightboxImage ||
+    !DOM.imageLightboxCaption ||
+    !DOM.imageLightboxClose
+  ) {
+    console.warn(
+      "[KirkDrinks] Image lightbox elements not found."
+    );
+
+    return;
+  }
+
+
+  /*
+   * Event delegation means this automatically works with
+   * review/gallery images rendered after page load.
+   */
+
+  document.addEventListener(
+    "click",
+    event => {
+      const image =
+        event.target.closest(
+          ".review-image, .gallery-item img"
+        );
+
+
+      if (!image) {
+        return;
+      }
+
+
+      if (
+        image.classList.contains(
+          "review-image-placeholder"
+        )
+      ) {
+        return;
+      }
+
+
+      openImageLightbox(
+        image
+      );
+    }
+  );
+
+
+  /*
+   * Keyboard accessibility for images acting as buttons.
+   */
+
+  document.addEventListener(
+    "keydown",
+    event => {
+      const image =
+        event.target.closest
+          ? event.target.closest(
+              ".review-image, .gallery-item img"
+            )
+          : null;
+
+
+      if (
+        image &&
+        (
+          event.key === "Enter" ||
+          event.key === " "
+        )
+      ) {
+        event.preventDefault();
+
+        openImageLightbox(
+          image
+        );
+
+        return;
+      }
+
+
+      if (
+        event.key === "Escape" &&
+        !DOM.imageLightbox.hidden
+      ) {
+        closeImageLightbox();
+      }
+    }
+  );
+
+
+  DOM.imageLightboxClose.addEventListener(
+    "click",
+    closeImageLightbox
+  );
+
+
+  /*
+   * Clicking the dark backdrop closes the viewer.
+   * Clicking the actual image does not.
+   */
+
+  DOM.imageLightbox.addEventListener(
+    "click",
+    event => {
+      if (
+        event.target ===
+        DOM.imageLightbox
+      ) {
+        closeImageLightbox();
+      }
+    }
+  );
+}
+
+
+function openImageLightbox(
+  image
+) {
+  if (
+    !DOM.imageLightbox ||
+    !DOM.imageLightboxImage ||
+    !DOM.imageLightboxCaption
+  ) {
+    return;
+  }
+
+
+  DOM.imageLightboxImage.src =
+    image.currentSrc ||
+    image.src;
+
+
+  DOM.imageLightboxImage.alt =
+    image.alt || "";
+
+
+  /*
+   * Gallery captions take priority.
+   * Review images fall back to their alt text.
+   */
+
+  const figure =
+    image.closest(
+      ".gallery-item"
+    );
+
+
+  const galleryCaption =
+    figure
+      ? figure.querySelector(
+          ".gallery-caption"
+        )
+      : null;
+
+
+  DOM.imageLightboxCaption.textContent =
+    galleryCaption &&
+    galleryCaption.textContent.trim()
+      ? galleryCaption.textContent.trim()
+      : image.alt || "";
+
+
+  DOM.imageLightbox.hidden =
+    false;
+
+
+  document.body.classList.add(
+    "lightbox-open"
+  );
+
+
+  DOM.imageLightboxClose.focus();
+}
+
+
+function closeImageLightbox() {
+  if (
+    !DOM.imageLightbox ||
+    DOM.imageLightbox.hidden
+  ) {
+    return;
+  }
+
+
+  DOM.imageLightbox.hidden =
+    true;
+
+
+  if (DOM.imageLightboxImage) {
+    DOM.imageLightboxImage.src =
+      "";
+
+    DOM.imageLightboxImage.alt =
+      "";
+  }
+
+
+  if (DOM.imageLightboxCaption) {
+    DOM.imageLightboxCaption.textContent =
+      "";
+  }
+
+
+  document.body.classList.remove(
+    "lightbox-open"
+  );
+}
+
+
+// ================================================================
 // FOOTER
 // ================================================================
 
@@ -3133,4 +2854,4 @@ function escapeHtml(
       /'/g,
       "&#039;"
     );
-  }
+    }
