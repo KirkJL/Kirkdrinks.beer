@@ -1,5 +1,4 @@
-[
-  {
+[{
     "name": "The Journey Begins",
     "brewery": "",
     "style": "IPA",
@@ -22,6 +21,33 @@
       "price": 4,
       "pour": 8,
       "venue": 7,
+      "review": "",
+      "wouldReturn": true
+    }
+  },
+  {
+    "name": "Extrovert",
+    "brewery": "Siren",
+    "style": "XPA",
+    "location": "Chelmsford",
+    "country": "United Kingdom",
+    "score": 7,
+    "buyAgain": true,
+    "review": "Siren Extrovert is a solid, enjoyable pint. Refreshing, nicely balanced and easy to drink, it's a beer I'd happily consider ordering again.",
+    "image": "assets/20261012_172739.jpg",
+    "alt": "Pint of Siren Extrovert extra pale ale from Siren Craft Brew, showing pale golden beer in a branded glass on a wooden pub table",
+    "venue": {
+      "name": "The Ale House",
+      "location": "Chelmsford",
+      "coordinates": {
+        "lat": 51.736076,
+        "lng": 0.467488
+      },
+      "pricePaid": 7.2,
+      "currency": "GBP",
+      "price": 4,
+      "pour": 8,
+      "venue": 8,
       "review": "",
       "wouldReturn": true
     }
