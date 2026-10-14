@@ -1475,6 +1475,42 @@ a {
   margin: 0;
 }
 
+.tiktok-link {
+  position: fixed;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  left: 18px;
+  z-index: 1001;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 20px;
+
+  background: var(--amber);
+  color: #211708;
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+
+  font-size: 0.9rem;
+  font-weight: 900;
+  text-decoration: none;
+
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease;
+}
+
+.tiktok-link:hover {
+  background: var(--amber-light);
+  transform: translateY(-2px);
+}
+
+.tiktok-link:focus-visible {
+  outline: 3px solid white;
+  outline-offset: 3px;
+}
+
 
 /* ================================================================
    TABLET
