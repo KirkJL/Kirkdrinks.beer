@@ -82,6 +82,15 @@ const DOM = {
   galleryGrid:
     document.querySelector("#gallery-grid"),
 
+  imageLightbox:
+    document.querySelector("#image-lightbox"),
+
+  imageLightboxImage:
+    document.querySelector("#image-lightbox-image"),
+
+  imageLightboxClose:
+    document.querySelector("#image-lightbox-close"),
+
   fundedCount:
     document.querySelector("#funded-count"),
 
@@ -108,6 +117,8 @@ const state = {
   maplibregl: null
 };
 
+let imageLightboxTrigger = null;
+
 
 // ================================================================
 // INITIALISATION
@@ -127,6 +138,8 @@ async function initialiseSite() {
   initialiseNavigation();
 
   initialiseFooter();
+
+  initialiseImageLightbox();
 
 
   /*
@@ -377,6 +390,9 @@ function createReviewCard(
                 class="review-image"
                 src="${image}"
                 alt="${alt}"
+                role="button"
+                tabindex="0"
+                aria-label="View full-size image: ${alt}"
                 loading="lazy"
                 decoding="async"
               >
@@ -2382,6 +2398,9 @@ function renderGallery() {
               <img
                 src="${image}"
                 alt="${alt}"
+                role="button"
+                tabindex="0"
+                aria-label="View full-size image: ${alt}"
                 loading="lazy"
                 decoding="async"
               >
@@ -2401,6 +2420,93 @@ function renderGallery() {
         }
       )
       .join("");
+}
+
+
+function initialiseImageLightbox() {
+  if (
+    !DOM.imageLightbox ||
+    !DOM.imageLightboxImage ||
+    !DOM.imageLightboxClose
+  ) {
+    return;
+  }
+
+
+  document.addEventListener(
+    "click",
+    event => {
+      if (
+        event.target instanceof HTMLImageElement &&
+        event.target.matches(
+          ".gallery-item img, .review-image"
+        )
+      ) {
+        openImageLightbox(event.target);
+      }
+    }
+  );
+
+
+  document.addEventListener(
+    "keydown",
+    event => {
+      if (
+        (event.key === "Enter" || event.key === " ") &&
+        event.target instanceof HTMLImageElement &&
+        event.target.matches(
+          ".gallery-item img, .review-image"
+        )
+      ) {
+        event.preventDefault();
+        openImageLightbox(event.target);
+      }
+    }
+  );
+
+
+  DOM.imageLightboxClose.addEventListener(
+    "click",
+    () => DOM.imageLightbox.close()
+  );
+
+
+  DOM.imageLightbox.addEventListener(
+    "click",
+    event => {
+      if (event.target === DOM.imageLightbox) {
+        DOM.imageLightbox.close();
+      }
+    }
+  );
+
+
+  DOM.imageLightbox.addEventListener(
+    "close",
+    () => {
+      DOM.imageLightboxImage.removeAttribute("src");
+      imageLightboxTrigger?.focus();
+      imageLightboxTrigger = null;
+    }
+  );
+}
+
+
+function openImageLightbox(image) {
+  if (
+    !DOM.imageLightbox ||
+    !DOM.imageLightboxImage ||
+    DOM.imageLightbox.open
+  ) {
+    return;
+  }
+
+
+  imageLightboxTrigger = image;
+  DOM.imageLightboxImage.src = image.currentSrc || image.src;
+  DOM.imageLightboxImage.alt = image.alt;
+  DOM.imageLightbox.showModal();
+  DOM.imageLightboxClose.focus();
 }
 
 
