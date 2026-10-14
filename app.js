@@ -118,6 +118,7 @@ const state = {
 };
 
 let imageLightboxTrigger = null;
+let imageLightboxScrollPosition = null;
 
 
 // ================================================================
@@ -2487,6 +2488,15 @@ function initialiseImageLightbox() {
       DOM.imageLightboxImage.removeAttribute("src");
       imageLightboxTrigger?.focus({ preventScroll: true });
       imageLightboxTrigger = null;
+
+      if (imageLightboxScrollPosition) {
+        const scrollPosition = imageLightboxScrollPosition;
+        restoreWindowScroll(scrollPosition);
+        requestAnimationFrame(
+          () => restoreWindowScroll(scrollPosition)
+        );
+        imageLightboxScrollPosition = null;
+      }
     }
   );
 }
@@ -2501,12 +2511,32 @@ function openImageLightbox(image) {
     return;
   }
 
-
+  imageLightboxScrollPosition = {
+    x: window.scrollX,
+    y: window.scrollY
+  };
   imageLightboxTrigger = image;
   DOM.imageLightboxImage.src = image.currentSrc || image.src;
   DOM.imageLightboxImage.alt = image.alt;
   DOM.imageLightbox.showModal();
   DOM.imageLightboxClose.focus({ preventScroll: true });
+
+  const scrollPosition = imageLightboxScrollPosition;
+  restoreWindowScroll(scrollPosition);
+  requestAnimationFrame(
+    () => restoreWindowScroll(scrollPosition)
+  );
+}
+
+
+function restoreWindowScroll(position) {
+  const root = document.documentElement;
+  const previousScrollBehavior =
+    root.style.scrollBehavior;
+
+  root.style.scrollBehavior = "auto";
+  window.scrollTo(position.x, position.y);
+  root.style.scrollBehavior = previousScrollBehavior;
 }
 
 
