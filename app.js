@@ -2485,7 +2485,7 @@ function initialiseImageLightbox() {
     "close",
     () => {
       DOM.imageLightboxImage.removeAttribute("src");
-      imageLightboxTrigger?.focus();
+      imageLightboxTrigger?.focus({ preventScroll: true });
       imageLightboxTrigger = null;
     }
   );
@@ -2506,7 +2506,7 @@ function openImageLightbox(image) {
   DOM.imageLightboxImage.src = image.currentSrc || image.src;
   DOM.imageLightboxImage.alt = image.alt;
   DOM.imageLightbox.showModal();
-  DOM.imageLightboxClose.focus();
+  DOM.imageLightboxClose.focus({ preventScroll: true });
 }
 
 
