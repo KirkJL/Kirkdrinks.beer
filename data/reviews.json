@@ -1,5 +1,32 @@
 [ 
     {
+    "name": "Chockwork Orange",
+    "brewery": "Siren",
+    "style": "Old Ale",
+    "location": "Chelmsford",
+    "country": "United Kingdom",
+    "score":8,
+    "buyAgain": true,
+    "review": "Chockwork Orange by Brentwood Brewing Co, think Guinness meets Terry's chocolate orange in a blender, and watered down, mind you it's still 6.5%!!",
+    "image": "assets/20261103_173254.jpg",
+    "alt": "Pint of Chockwork Orange old ale by Brentwood brewing co in an unbranded glass.",
+    "venue": {
+      "name": "The Ale House",
+      "location": "Chelmsford",
+      "coordinates": {
+        "lat": 51.736076,
+        "lng": 0.467488
+      },
+      "pricePaid": 5.8,
+      "currency": "GBP",
+      "price": 2,
+      "pour": 8,
+      "venue": 8,
+      "review": "",
+      "wouldReturn": true
+    }
+  },
+    {
     "name": "Pagan Juice",
     "brewery": "Siren",
     "style": "Hazy",
